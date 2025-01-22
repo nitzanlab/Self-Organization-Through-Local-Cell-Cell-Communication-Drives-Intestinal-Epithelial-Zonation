@@ -22,6 +22,20 @@ def load_unperturbed_cell_coords():
     coordinates_data = pd.read_csv(coordinates_file_path)
     return coordinates_data
 
+def get_wt_monolayer_adata(num_neigh=5):
+    cell_by_gene = load_unperturbed_intestinal_organoid_cell_by_gene_mat()[ORGANOID_GENE_NAMES_NOGFP]
+    adata = ad.AnnData(X=cell_by_gene)
+    cell_coords = load_unperturbed_cell_coords()
+    sc.pp.normalize_total(adata)
+    adata.var_names = cell_by_gene.columns
+    cell_coords_reindexed = cell_coords.rename(index=dict(zip(cell_coords.index, adata.obs_names)))
+    adata.obsm['spatial'] = cell_coords_reindexed
+    num_neighs_to_use = num_neigh + 1
+    nbrs = NearestNeighbors(n_neighbors=num_neighs_to_use, algorithm='auto').fit(adata.obsm['spatial'])
+    distances, neigh_idxs = nbrs.kneighbors(adata.obsm['spatial'])
+    adata.obsm['neighbors_idx'] = np.array(neigh_idxs[:, 1:])
+    return adata
+
 def load_unperturbed_monolayer_gene_densities():
     with open(
             os.path.join(WT_MONOLAYER_DIR,'wt_monolayer_gene_densities_new.pkl'),

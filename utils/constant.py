@@ -1,5 +1,15 @@
 from utils.imports import *
 
+def set_style():
+ plt.rcParams.update(plt.rcParamsDefault)
+ plt.rcParams.update({'figure.titlesize': 8, 'figure.titleweight': 'bold', 'axes.titlesize': 8,
+                      'axes.titleweight': "bold", 'axes.labelsize': 8, 'axes.labelweight': 'bold',
+                      "ytick.labelsize": 8, "xtick.labelsize": 8, 'legend.fontsize': 8,
+                      'font.family': 'DejaVu Sans'})
+ plt.rcParams.update({'figure.figsize': (4, 3)})
+ plt.rcParams.update({'savefig.dpi': 300})
+
+
 #cell type constants
 CELL_TYPES_TO_MARKER_GENES = {'enterocyte':['Alpi', 'Aldob','Sis','Apoa1'], 'goblet_cells':['Muc2'],'EEC':['Chga'],'Tuft_cells':['Dclk1'],'paneth_cells':['Lyz1'], 'stem_cells':['Lgr5','Olfm4'], 'regenerative':['Msln','Ahnak']}
 CELL_TYPES_TO_MARKER_GENES_REG_RESPONSE = {'enterocyte':['Aldob','Ada','Apoa4','Apoa1','Alpi','Sis','Apob'], 'goblet_cells':['Muc2'],'EEC':['Chga'],'Tuft_cells':['Dclk1'],'paneth_cells':['Lyz1'], 'stem_cells':['Lgr5','Olfm4'], 'regenerative':['Mki67','Clu' ,'Yap1','Ly6a','Msln','Ahnak']}

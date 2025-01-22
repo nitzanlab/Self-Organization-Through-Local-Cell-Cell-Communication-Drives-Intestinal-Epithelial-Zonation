@@ -1,5 +1,9 @@
 
 from paper.plotScripts.plotALL import *
 
+from paper.plotScripts.continuous_regenerative_response import *
+
+
 if __name__ == '__main__':
-    plot_bottom_to_top_villus_expression_monolyayer_subregion()
+   set_style()
+   plot_all_continuous_regenerative_response_plots()
