@@ -14,6 +14,24 @@ def set_style():
 CELL_TYPES_TO_MARKER_GENES = {'enterocyte':['Alpi', 'Aldob','Sis','Apoa1'], 'goblet_cells':['Muc2'],'EEC':['Chga'],'Tuft_cells':['Dclk1'],'paneth_cells':['Lyz1'], 'stem_cells':['Lgr5','Olfm4'], 'regenerative':['Msln','Ahnak']}
 CELL_TYPES_TO_MARKER_GENES_REG_RESPONSE = {'enterocyte':['Aldob','Ada','Apoa4','Apoa1','Alpi','Sis','Apob'], 'goblet_cells':['Muc2'],'EEC':['Chga'],'Tuft_cells':['Dclk1'],'paneth_cells':['Lyz1'], 'stem_cells':['Lgr5','Olfm4'], 'regenerative':['Mki67','Clu' ,'Yap1','Ly6a','Msln','Ahnak']}
 
+UNPERTURBED_ZOOMED_IN_X = [10000, 17000]
+UNPERTURBED_ZOOMED_IN_Y = [14000, 21000]
+
+UNPERTURBED_ZOOMED_IN_X_SEC_CELL = [15000, 16500]
+UNPERTURBED_ZOOMED_IN_Y_SEC_CELL = [14000, 21000]
+
+UNPERTURBED_ZOOMED_IN_X_SEC_CELL_2 = [12000, 16000]
+UNPERTURBED_ZOOMED_IN_Y_SEC_CELL_2 = [17500, 21000]
+
+
+
+
+
+
+
+
+
+
 CELL_TYPE_ANNOT_ORDER = ['regenerative', 'enterocyte','EEC','goblet_cells','stem_cells','paneth_cells','Tuft_cells']
 ALL_CELL_TYPES_PLOT_ORDER =['EEC','Tuft_cells','paneth_cells','goblet_cells','stem_cells','enterocyte','regenerative']
 DOMINANT_CELL_TYPES = ['regenerative', 'enterocyte']

@@ -11,16 +11,21 @@ def plot_all_continuous_regenerative_response_plots():
     ###panel d: heatmap L metric in unperturbed data #TODO Yael
 
     ###panel e: regenerative expression in unperturbed monolayer
-    plot_regenerative_expression_across_cell_types_spatially('Msln')
+    #plot_regenerative_expression_across_cell_types_spatially('Msln')
+
+    #plot_regenerative_expression_across_cell_types_spatially('Msln', x_region=UNPERTURBED_ZOOMED_IN_X_SEC_CELL_2, y_region=UNPERTURBED_ZOOMED_IN_Y_SEC_CELL_2)
+    for gene in ENTEROCYTE_GENES:
+        plot_regenerative_expression_across_cell_types_spatially(gene, x_region=UNPERTURBED_ZOOMED_IN_X_SEC_CELL_2,
+                                                             y_region=UNPERTURBED_ZOOMED_IN_Y_SEC_CELL_2)
 
     ###panel f: zoom in regions
 
 
     ###panel g: regenerative expression neighborhood correlation
-    plot_regenerative_gene_expression_neighborhood_similarity(ALL_CELL_TYPE_GENES)
+    #plot_regenerative_gene_expression_neighborhood_similarity(ALL_CELL_TYPE_GENES)
     pass
 
-def plot_regenerative_expression_across_cell_types_spatially(goi, title=''):
+def plot_regenerative_expression_across_cell_types_spatially(goi, x_region=UNPERTURBED_ZOOMED_IN_X,y_region=UNPERTURBED_ZOOMED_IN_Y,title=''):
     cell_by_gene = load_unperturbed_intestinal_organoid_cell_by_gene_mat()
     cell_by_gene_normed = normalize_cell_by_gene_by_cells_then_genes(cell_by_gene, ORGANOID_GENE_NAMES_NOGFP)
     cell_coords = load_unperturbed_cell_coords()
@@ -52,8 +57,8 @@ def plot_regenerative_expression_across_cell_types_spatially(goi, title=''):
     plt.legend(title='Clusters', loc='upper left', fontsize='small', title_fontsize='medium')
 
     cbar.set_label('Msln expression levels')
-    plt.xlim(10000, 17000)
-    plt.ylim(14000, 21000)
+    plt.xlim(x_region[0], x_region[1])
+    plt.ylim(y_region[0], y_region[1])
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.xticks([])
@@ -61,6 +66,7 @@ def plot_regenerative_expression_across_cell_types_spatially(goi, title=''):
     plt.title(f'{goi} expression in tissue wt {title}')
     plt.gca().invert_yaxis()
     plt.show()
+
 
 
 def plot_regenerative_gene_expression_neighborhood_similarity(genes):
