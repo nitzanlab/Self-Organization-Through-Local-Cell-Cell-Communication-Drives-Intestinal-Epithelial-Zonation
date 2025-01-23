@@ -33,6 +33,7 @@ def plot_gene_groups_expression_on_wt_monolayer(gene_group1, gene_group2, group1
     gene_exp = adata[:, gene_group1].X.mean(axis=1) / (
                 adata[:, gene_group1].X.mean(axis=1) + adata[:, gene_group2].X.mean(axis=1))
     signal_df = pd.DataFrame(adata.X, columns=adata.var.index,  index=adata.obs_names)
+
     signal_df['x'] = adata.obsm['spatial']['center_x']
     signal_df['y'] = adata.obsm['spatial']['center_y']
     signal_df['signal'] = gene_exp
