@@ -18,12 +18,17 @@ def plot_all_continuous_regenerative_response_plots():
         plot_regenerative_expression_across_cell_types_spatially(gene, x_region=UNPERTURBED_ZOOMED_IN_X_SEC_CELL_2,
                                                              y_region=UNPERTURBED_ZOOMED_IN_Y_SEC_CELL_2)
 
+    #expression of secretory and progenitor genes
+    # genes = ['Mki67'] #['Muc2','Chga','Dclk1','Lyz1','Mki67']
+    # for gene in genes:
+    #     plot_regenerative_expression_across_cell_types_spatially(gene, x_region=UNPERTURBED_ZOOMED_IN_X_SEC_CELL_2, y_region=UNPERTURBED_ZOOMED_IN_Y_SEC_CELL_2)
+
     ###panel f: zoom in regions
 
 
     ###panel g: regenerative expression neighborhood correlation
     #plot_regenerative_gene_expression_neighborhood_similarity(ALL_CELL_TYPE_GENES)
-    pass
+
 
 def plot_regenerative_expression_across_cell_types_spatially(goi, x_region=UNPERTURBED_ZOOMED_IN_X,y_region=UNPERTURBED_ZOOMED_IN_Y,title=''):
     cell_by_gene = load_unperturbed_intestinal_organoid_cell_by_gene_mat()
@@ -45,7 +50,7 @@ def plot_regenerative_expression_across_cell_types_spatially(goi, x_region=UNPER
     # ]
 
     # normalized_exp = normalize_gene_exp_for_tissue_rep(cell_by_gene_normed[goi])
-    plt.scatter(cell_coords['center_x'], cell_coords['center_y'], c=cell_by_gene_normed[goi], cmap='Oranges', s=20,
+    plt.scatter(cell_coords['center_x'], cell_coords['center_y'], c=cell_by_gene_normed[goi], cmap='Greens', s=20,
                 edgecolors=edge_colors)
     cbar = plt.colorbar()
     cluster_dict = {0: 'regenerative', 1: 'regenerative', 2: 'regenerative', 3: 'enterocyte', 4: 'secretory',
@@ -56,7 +61,7 @@ def plot_regenerative_expression_across_cell_types_spatially(goi, x_region=UNPER
 
     plt.legend(title='Clusters', loc='upper left', fontsize='small', title_fontsize='medium')
 
-    cbar.set_label('Msln expression levels')
+    cbar.set_label(f'{goi} expression levels')
     plt.xlim(x_region[0], x_region[1])
     plt.ylim(y_region[0], y_region[1])
     plt.xlabel('X')
@@ -70,7 +75,7 @@ def plot_regenerative_expression_across_cell_types_spatially(goi, x_region=UNPER
 
 
 def plot_regenerative_gene_expression_neighborhood_similarity(genes):
-    adata = get_wt_monolayer_adata()
+    adata = get_unperturbed_monolayer_adata()
     clusters_df = pd.read_csv(os.path.join(DATA_DIR, 'cell_by_gene_cluster_annotations.csv'))
     clusters = clusters_df.sort_values(by='object_id', ascending=True)['cluster_id']
     unique_clusters = np.unique(clusters)
