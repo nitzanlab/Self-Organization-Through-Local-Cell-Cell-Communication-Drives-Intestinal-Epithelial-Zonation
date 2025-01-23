@@ -18,6 +18,8 @@ def plot_all_autonomous_figure_plots():
     plot_gene_groups_expression_on_wt_monolayer(['Ada','Apoa4','Apoa1'], ['Sis','Alpi'], 'top', 'bottom')
 
     ###panel f: erosion rings
+    # plot_erosion_rings()
+    # plot_zoomed_in_erosion_rings()
 
     ###panel g: erosion expression profiles
 
@@ -48,5 +50,7 @@ def plot_gene_groups_expression_on_wt_monolayer(gene_group1, gene_group2, group1
     cbar = plt.colorbar(sctr1)
     cbar.set_label(f'{group1_name}/{group2_name}\n expression')
     plt.tight_layout()
+    file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, 'bottom_top_villus_exp.pdf')
+    plt.savefig(file_name, format='pdf')
     plt.show()
 

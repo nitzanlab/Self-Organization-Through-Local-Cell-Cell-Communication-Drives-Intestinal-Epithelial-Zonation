@@ -1,25 +1,139 @@
 from paper.extractedData.load_csvs import *
-
+from utils.imports import *
 def plot_erosion_rings():
     data = load_unperturbed_monolayer_transcripts()
     xedges, yedges, binary_mask_cleaned, extent = compute_unperturbed_monolayer_spatial_mask(save_to_pickle=False)
     plot_binary_mask_cleaned(binary_mask_cleaned, extent)
     check_mask_fidelity(data, binary_mask_cleaned, extent)
-    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, erosion_step=5, num_iterations=30, plot_rings=True,
+    ring_masks = calculate_ring_masks(binary_mask_cleaned, xedges, yedges, num_iterations=NUM_ITERATIONS, plot_rings=False, save_rings=True)
+    result_dict = compute_transcript_density_in_rings_all_genes(
+        binary_mask=binary_mask_cleaned,
+        erosion_step=5,
+        num_iterations=30,
+        data=data[data['name'] == 'Nupr1'],
+        xedges=xedges,
+        yedges=yedges,
+        xy_spacing=XY_SPACING
+    )
+    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, erosion_step=EROSION_STEP, num_iterations=NUM_ITERATIONS, plot_rings=True,
                        image_x_range=None, image_y_range=None)
+    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=[1500, 2000],
+                       image_y_range=[1500, 2000])
+
+def plot_erosion_rings_from_saved_components():
+    pass
+
+def plot_zoomed_in_erosion_rings():
+    xedges, yedges, binary_mask_cleaned, extent = compute_unperturbed_monolayer_spatial_mask(save_to_pickle=False)
+    ring_masks = calculate_ring_masks(binary_mask_cleaned, xedges, yedges, num_iterations=NUM_ITERATIONS,
+                                      plot_rings=False, save_rings=True)
+    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=[1500, 2000],
+                       image_y_range=[1500, 2000])
+def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings=True, save_rings=True):
+    data = load_unperturbed_monolayer_transcripts()
+    densities = []
+    areas = []
+    counts = []
+    ring_masks = []
+
+    # Get the positions of transcripts for the specified gene
+    gene_data = data[data['name'] == 'Nupr1']
+    x_transcripts = gene_data['x'].values
+    y_transcripts = gene_data['y'].values
+
+    # Map the transcript positions to the mask grid indices
+    x_indices = np.searchsorted(xedges, x_transcripts, side='right') - 1
+    y_indices = np.searchsorted(yedges, y_transcripts, side='right') - 1
+
+    # Remove indices that are out of bounds
+    valid_indices = (x_indices >= 0) & (x_indices < binary_mask.shape[1]) & \
+                    (y_indices >= 0) & (y_indices < binary_mask.shape[0])
+
+    x_indices = x_indices[valid_indices]
+    y_indices = y_indices[valid_indices]
+
+    # Initialize previous mask as the initial mask
+    previous_mask = binary_mask.copy()
+
+    for i in range(num_iterations):
+        print(f"Iteration {i + 1} of {num_iterations}")
+        # Erode the mask
+        selem = disk(EROSION_STEP)
+        eroded_mask = erosion(previous_mask, selem)
+
+        # Compute the ring region
+        ring_region = previous_mask & (~eroded_mask)
+
+        # If the ring region is empty, break the loop
+        if not ring_region.any():
+            break
+
+        # Save the ring mask for plotting
+        ring_masks.append(ring_region.copy())
+
+        # For each transcript, check if it is in the ring region
+        transcript_in_ring = ring_region[y_indices, x_indices]
+
+        # Count the number of transcripts in the ring region
+        count_in_ring = np.sum(transcript_in_ring)
+
+        # Compute the area of the ring region (assuming each pixel represents 10x10 units)
+        area = ring_region.sum() * (XY_SPACING * XY_SPACING)
+
+        # Compute the density
+        density = count_in_ring / area if area > 0 else 0
+
+        # Store the results
+        counts.append(count_in_ring)
+        areas.append(area)
+        densities.append(density)
+
+        # Update previous mask
+        previous_mask = eroded_mask.copy()
+    if save_rings:
+        with open(
+                r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\monolayer_ring_masks.pkl',
+                'wb') as f:
+            pickle.dump(ring_masks, f)
+    # Plot the rings with colors representing densities
+    if plot_rings and ring_masks:
+        # Create an array to hold the density values for each pixel
+        density_image = np.zeros_like(binary_mask, dtype=float)
+
+        # Normalize densities for coloring
+        max_density = max(densities) if densities else 1
+        norm_densities = [d / max_density for d in densities]
+
+        # Assign density values to the pixels in each ring
+        for ring_mask, density_norm in zip(ring_masks, norm_densities):
+            density_image[ring_mask] = density_norm
+
+        # Plot the density image
+        plt.figure(figsize=(8, 6))
+        extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+        plt.imshow(density_image, extent=extent, origin='lower', cmap='viridis', aspect='auto')
+        plt.colorbar(label='Normalized Density')
+        plt.title(f'Density of Nupr1 Transcripts in Rings')
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.show()
+
+    return ring_masks #densities, areas, counts
+
 
 def compute_unperturbed_monolayer_spatial_mask(save_to_pickle=True):
     #Step 1: load transcripts
     data = load_unperturbed_monolayer_transcripts()
-    xy_spacing = 10
+
 
     # Step 2: Get x and y positions
     x = data['x'].values
     y = data['y'].values
 
     # Step 3: Create x and y bins
-    edge_vec_x = np.arange(0, x.max() + xy_spacing, xy_spacing)
-    edge_vec_y = np.arange(0, y.max() + xy_spacing, xy_spacing)
+    edge_vec_x = np.arange(0, x.max() + XY_SPACING, XY_SPACING)
+    edge_vec_y = np.arange(0, y.max() + XY_SPACING, XY_SPACING)
 
     # Step 4: Compute 2D histogram (note y and x are swapped to match image coordinates)
     hist, yedges, xedges = np.histogram2d(y, x, bins=[edge_vec_y, edge_vec_x])
@@ -180,7 +294,7 @@ def compute_transcript_density_in_rings(gene_name, binary_mask, erosion_step, nu
         count_in_ring = np.sum(transcript_in_ring)
 
         # Compute the area of the ring region (assuming each pixel represents 10x10 units)
-        area = ring_region.sum() * (xy_spacing * xy_spacing)
+        area = ring_region.sum() * (XY_SPACING * XY_SPACING)
 
         # Compute the density
         density = count_in_ring / area if area > 0 else 0
@@ -225,7 +339,7 @@ def compute_transcript_density_in_rings(gene_name, binary_mask, erosion_step, nu
 
 
 def compute_transcript_density_in_rings_all_genes(binary_mask, erosion_step, num_iterations, data, xedges, yedges,
-                                                  xy_spacing):
+                                                  xy_spacing=XY_SPACING):
     """
     Computes the density of transcripts in successive rings of the mask for all genes.
 
@@ -288,11 +402,11 @@ def compute_transcript_density_in_rings_all_genes(binary_mask, erosion_step, num
 
         # Compute the ring region
         ring_region = previous_mask & (~eroded_mask)
-        if num_iterations % 10 == 0:
-            ring_mask_uint8 = (ring_region * 255).astype(np.uint8)
-            find_ring_width_in_pixels(ring_mask_uint8)
-            plt.imshow(ring_region)
-            plt.show()
+        # if num_iterations % 10 == 0:
+        #     ring_mask_uint8 = (ring_region * 255).astype(np.uint8)
+        #     find_ring_width_in_pixels(ring_mask_uint8)
+        #     plt.imshow(ring_region)
+        #     plt.show()
 
         # If the ring region is empty, break the loop
         if not ring_region.any():

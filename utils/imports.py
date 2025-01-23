@@ -23,6 +23,9 @@ from matplotlib.lines import Line2D
 import pickle
 import matplotlib.cm as cm
 
+from skimage import morphology
+from skimage.morphology import binary_closing, disk, binary_opening, erosion
+
 from scipy.ndimage import gaussian_filter
 from skimage import morphology
 from skimage.morphology import binary_opening, disk

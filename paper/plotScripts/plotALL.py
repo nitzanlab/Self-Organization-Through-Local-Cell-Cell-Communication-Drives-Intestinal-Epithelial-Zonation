@@ -1,6 +1,6 @@
 
 from paper.plotScripts.autonomous_zonation_plots import *
-from paper.plotScripts.zonation_plasticity_plots import *
+from paper.plotScripts.zonation_plasticity import *
 from paper.plotScripts.neighborhood_zone_adoption import *
 from paper.plotScripts.continuous_regenerative_response import *
 def plot_all_figures():

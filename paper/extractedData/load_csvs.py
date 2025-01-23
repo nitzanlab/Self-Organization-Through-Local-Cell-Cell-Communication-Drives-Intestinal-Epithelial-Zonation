@@ -7,15 +7,15 @@ from utils.constant import *
 ####Unperturbed Monolayer Data Loader #####
 
 def load_unperturbed_intestinal_organoid_cell_by_gene_mat():
-    #cell_by_gene_file_path = os.path.join(DATA_DIR, 'cell_by_gene_cluster_annotations.csv')
-    cell_by_gene_file_path = os.path.join(DATA_DIR,'cell_by_gene_mat.csv')
+    cell_by_gene_file_path = os.path.join(DATA_DIR, 'cell_by_gene_cluster_annotations.csv')
+    #cell_by_gene_file_path = os.path.join(DATA_DIR,'cell_by_gene_mat.csv')
 
     # Load CSV file into a Pandas DataFrame
     cell_by_gene_data_organoid = pd.read_csv(cell_by_gene_file_path)
 
-    #cell_by_gene_data_organoid = cell_by_gene_data_organoid.sort_values(by='object_id', ascending=True)
+    cell_by_gene_data_organoid = cell_by_gene_data_organoid.sort_values(by='object_id', ascending=True)
 
-    cell_by_gene_data_organoid = cell_by_gene_data_organoid.sort_values(by='Unnamed: 0', ascending=True)
+    #cell_by_gene_data_organoid = cell_by_gene_data_organoid.sort_values(by='Unnamed: 0', ascending=True)
     cell_by_gene_data_organoid.drop('Unnamed: 0', axis=1, inplace=True)
     return cell_by_gene_data_organoid
 
@@ -57,10 +57,27 @@ def save_to_pickle_monolayer_masking_components(xedges, yedges, binary_mask_clea
     save_one_monolayer_masking_component_to_pickle(binary_mask_cleaned, 'binary_mask_cleaned')
     save_one_monolayer_masking_component_to_pickle(extent, 'extent')
 
+
 def save_one_monolayer_masking_component_to_pickle(component, component_name):
     save_path = os.path.join(WT_MONOLAYER_DIR, f'{component_name}.pkl')
     with open(fr'{save_path}','wb') as f:
         pickle.dump(component, f)
+
+def load_erosion_components():
+    xedges = load_one_monolayer_masking_component_from_pickle('xedges')
+    yedges = load_one_monolayer_masking_component_from_pickle('yedges')
+    binary_mask_cleaned = load_one_monolayer_masking_component_from_pickle('binary_mask_cleaned')
+    extent = load_one_monolayer_masking_component_from_pickle('extent')
+    ring_masks = load_one_monolayer_masking_component_from_pickle('ring_masks')
+    return xedges, yedges, binary_mask_cleaned, ring_masks, extent
+
+
+def load_one_monolayer_masking_component_from_pickle(component_name):
+    load_path = os.path.join(WT_MONOLAYER_DIR, f'{component_name}.pkl')
+    with open(
+            fr'{load_path}','rb') as f:
+        component = pickle.load(f)
+    return component
 
 ### load sprinkled data by timepoint and roi
 def load_cell_by_gene_by_hr_and_roi(hr:str ,roi:str):
