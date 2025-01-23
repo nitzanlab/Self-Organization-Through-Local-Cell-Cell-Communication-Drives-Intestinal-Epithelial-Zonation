@@ -35,7 +35,7 @@ XY_SPACING = 10
 EROSION_STEP = 5
 NUM_ITERATIONS = 30
 
-AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), "autonomous_zonation_figure_plots")
+AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','autonomous_zonation_figure_plots')
 
 
 
