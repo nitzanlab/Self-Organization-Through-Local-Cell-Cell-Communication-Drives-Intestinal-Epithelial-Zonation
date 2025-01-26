@@ -79,6 +79,17 @@ def load_one_monolayer_masking_component_from_pickle(component_name):
         component = pickle.load(f)
     return component
 
+def load_transcript_densities_unperturbed_monolayer():
+    with open(
+            os.path.join(WT_MONOLAYER_DIR, 'wt_monolayer_gene_densities_new.pkl'),
+            'rb') as f:
+        result_dict = pickle.load(f)
+    return result_dict
+def save_transcript_densities_unperturbed_monolayer(result_dict):
+    with open( os.path.join(WT_MONOLAYER_DIR, 'wt_monolayer_gene_densities_new.pkl'),
+            'wb') as f:
+        pickle.dump(result_dict, f)
+
 ### load sprinkled data by timepoint and roi
 def load_cell_by_gene_by_hr_and_roi(hr:str ,roi:str):
     tmpt_dir = os.path.join(MULT_ROIS_DIR, hr)
@@ -135,3 +146,36 @@ def get_tmpt_all_rois_adata(tmpt, num_neigh=5):
         adata_one_roi = load_sprinkled_adata_hr_tmpt(tmpt, roi, num_neigh)
         adata_all_rois = adata_all_rois.concatenate(adata_one_roi, batch_key='rois',batch_categories=TMPT_TO_ROIS_DICT[tmpt][:i+2])
     return adata_all_rois
+
+#### in vivo data
+def load_TPM_LCM_intestine_atlas():
+    LCM_TPM_data = pd.read_csv(os.path.join(SHALEV_DATA_DIR, 'table_A_LCM_TPM_values.tsv'),
+                delimiter='\t')
+    return LCM_TPM_data
+
+def get_LCM_atlas_gene_subset(atlas, genes):
+    LCM_atlas_top_lndrmk, ordered_gene_list = preprocess_LCM_atlas_only_core_reference_genes(atlas, genes)
+    return LCM_atlas_top_lndrmk,ordered_gene_list
+
+def load_invivo_reconstruction():
+    reconstruction = pd.read_csv(os.path.join(SHALEV_DATA_DIR, 'table_D_zonation_reconstruction.tsv'),
+                               delimiter='\t', index_col=0)
+    return reconstruction
+def preprocess_LCM_atlas_only_core_reference_genes(LCM_atlas ,genes_list):
+    preproceed_LCM_atlas = {}
+    filted_LCM_atlas = LCM_atlas[LCM_atlas['external_gene_name'].isin(genes_list)]
+    filtered_gene_names = LCM_atlas['external_gene_name'][LCM_atlas['external_gene_name'].isin(genes_list)]
+    ordered_filtered_genes_list = [gene for gene in genes_list if gene in np.array(filtered_gene_names)]
+
+    for i in range(NUM_POSITIONS_LCM_ATLAS):
+        villus_columns = [col for col in filted_LCM_atlas.columns if col.startswith(f'Villus_{i+1}')]
+        preproceed_LCM_atlas[f'Villus_{i+1}'] = filted_LCM_atlas[villus_columns].mean(axis=1)
+    LCM_atlas_meaned = pd.DataFrame(preproceed_LCM_atlas)
+    min_valus = LCM_atlas_meaned.min(axis=1)
+    max_valus = LCM_atlas_meaned.max(axis=1)
+
+    LCM_atlas_meaned_normalized = (LCM_atlas_meaned.sub(min_valus,axis=0)).div(max_valus-min_valus,axis=0)
+    #set same index as the filtered LCM atlas with the multiple mice , before meaned and normalized
+    LCM_atlas_meaned_normalized.set_index(filted_LCM_atlas['external_gene_name'], inplace=True)
+    LCM_rearranged = LCM_atlas_meaned_normalized.loc[ordered_filtered_genes_list]
+    return LCM_rearranged, ordered_filtered_genes_list

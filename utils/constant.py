@@ -14,8 +14,12 @@ def set_style():
 CELL_TYPES_TO_MARKER_GENES = {'enterocyte':['Alpi', 'Aldob','Sis','Apoa1'], 'goblet_cells':['Muc2'],'EEC':['Chga'],'Tuft_cells':['Dclk1'],'paneth_cells':['Lyz1'], 'stem_cells':['Lgr5','Olfm4'], 'regenerative':['Msln','Ahnak']}
 CELL_TYPES_TO_MARKER_GENES_REG_RESPONSE = {'enterocyte':['Aldob','Ada','Apoa4','Apoa1','Alpi','Sis','Apob'], 'goblet_cells':['Muc2'],'EEC':['Chga'],'Tuft_cells':['Dclk1'],'paneth_cells':['Lyz1'], 'stem_cells':['Lgr5','Olfm4'], 'regenerative':['Mki67','Clu' ,'Yap1','Ly6a','Msln','Ahnak']}
 
+# UNPERTURBED_ZOOMED_IN_X = [10000, 17000]
+# UNPERTURBED_ZOOMED_IN_Y = [14000, 21000]
+
 UNPERTURBED_ZOOMED_IN_X = [10000, 17000]
-UNPERTURBED_ZOOMED_IN_Y = [14000, 21000]
+UNPERTURBED_ZOOMED_IN_Y = [15000, 22000]
+
 
 UNPERTURBED_ZOOMED_IN_X_SEC_CELL = [15000, 16500]
 UNPERTURBED_ZOOMED_IN_Y_SEC_CELL = [14000, 21000]
@@ -36,7 +40,7 @@ EROSION_STEP = 5
 NUM_ITERATIONS = 30
 
 AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','autonomous_zonation_figure_plots')
-
+CONTINUOUS_REGENERATIVE_RESPONSE_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','continuous_regenerative_figure_plots')
 
 
 

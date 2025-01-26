@@ -26,6 +26,8 @@ import matplotlib.cm as cm
 from skimage import morphology
 from skimage.morphology import binary_closing, disk, binary_opening, erosion
 
+from matplotlib.colors import LinearSegmentedColormap
+
 from scipy.ndimage import gaussian_filter
 from skimage import morphology
 from skimage.morphology import binary_opening, disk

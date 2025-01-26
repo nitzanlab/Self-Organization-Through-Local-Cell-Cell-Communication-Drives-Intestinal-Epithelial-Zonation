@@ -19,6 +19,7 @@ def plot_erosion_rings():
                        image_x_range=None, image_y_range=None)
     plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=[1500, 2000],
                        image_y_range=[1500, 2000])
+    return result_dict
 
 def plot_erosion_rings_from_saved_components():
     pass
@@ -438,3 +439,108 @@ def compute_transcript_density_in_rings_all_genes(binary_mask, erosion_step, num
         previous_mask = eroded_mask.copy()
 
     return result_dict
+
+
+def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_plots=False):
+    """
+    Plots the density profiles for multiple genes.
+
+    Parameters:
+    - result_dict: The dictionary returned by compute_transcript_density_in_rings_all_genes function.
+    - gene_names: List of gene names to plot. If None, plots all genes.
+    - normalize: Boolean flag to normalize densities by their maximum value (default False).
+    - spread_plots: Boolean flag to create stacked plots for each gene (default False).
+
+    Returns:
+    - None
+    """
+    # If gene_names is None, plot all genes
+    if gene_names is None:
+        gene_names = list(result_dict.keys())
+
+    if not gene_names:
+        print("No genes to plot.")
+        return
+
+    if spread_plots:
+        # Create stacked subplots with shared X-axis
+        num_genes = len(gene_names)
+        fig, axs = plt.subplots(num_genes, 1, sharex=True, figsize=(12, 4 * num_genes))
+
+        if num_genes == 1:
+            axs = [axs]  # Ensure axs is a list even if there is only one subplot
+
+        for ax, gene_name in zip(axs, gene_names):
+            if gene_name in result_dict:
+                densities = (result_dict[gene_name]['densities'])[:-10] #before [::-1] inside
+                if densities:
+                    if normalize:
+                        max_density = max(densities)
+                        if max_density > 0:
+                            densities = [d / max_density for d in densities]
+                        else:
+                            densities = [0] * len(densities)
+                    iterations = np.arange(1, len(densities) + 1)
+                    ax.plot(iterations, densities, marker='o', label=gene_name)
+                    ax.set_ylabel('Normalized Density' if normalize else 'Density')
+                    ax.set_title(f'Density Profile of {gene_name}')
+                    ax.grid(True)
+                    ax.legend()
+                else:
+                    print(f"No density data available for gene '{gene_name}'.")
+            else:
+                print(f"Gene '{gene_name}' not found in the results.")
+        axs[-1].set_xlabel('Iteration')
+        plt.tight_layout()
+        plt.show()
+    else:
+        # Plot all genes on the same plot
+        plt.figure(figsize=(12, 8))
+        for gene_name in gene_names:
+            if gene_name in result_dict:
+                densities = result_dict[gene_name]['densities']
+                if densities:
+                    if normalize:
+                        max_density = max(densities)
+                        if max_density > 0:
+                            densities = [d / max_density for d in densities]
+                        else:
+                            densities = [0] * len(densities)
+                    iterations = np.arange(1, len(densities) + 1)
+                    plt.plot(iterations, densities, marker='o', label=gene_name)
+                else:
+                    print(f"No density data available for gene '{gene_name}'.")
+            else:
+                print(f"Gene '{gene_name}' not found in the results.")
+        plt.title('Density Profiles of Genes in Successive Rings')
+        plt.xlabel('Iteration')
+        plt.ylabel('Normalized Density' if normalize else 'Density (transcripts per unit area)')
+        plt.grid(True)
+        plt.legend()
+        plt.show()
+
+def plot_wt_monolayer_gene_density_to_invivo_comparisons():
+    result_dict = load_unperturbed_monolayer_gene_densities()
+    invivo_exp_raw = load_TPM_LCM_intestine_atlas()
+    invivo_exp,genes_LCM =  get_LCM_atlas_gene_subset(invivo_exp_raw, ORGANOID_GENE_NAMES)
+    gene_density_df = pd.DataFrame({gene: values['densities'] for gene, values in result_dict.items()})[5:20][::-1][genes_LCM]
+    gene_density_smoothened = gene_density_df.apply(apply_savgol)
+    gene_density_df_normalized = gene_density_smoothened.apply(lambda x: (x - x.min()) / (x.max() - x.min()))
+    x_gene_density = np.linspace(0,1,gene_density_df.shape[0])
+    x_invivo = np.linspace(0, 1, invivo_exp.shape[1])
+    save_path = os.path.join(WT_MONOLAYER_DIR, 'invivo_to_monolayer_expression_profiles')
+
+    for i, gene in enumerate(genes_LCM):
+        print(f'{gene}, num {i}')
+        plt.figure(figsize=(8, 8))
+        plt.plot(x_gene_density, gene_density_df_normalized[gene], label='enteroid monolayer')
+        plt.plot(x_invivo, invivo_exp.loc[gene], label='invivo')
+        plt.legend()
+        plt.xlabel('bottom to top villus axis')
+        plt.ylabel('expression')
+        plt.title(f'{gene} invivo to enteroid monolayer expression profile comparison')
+        plt.savefig(os.path.join(save_path, f'{gene}_invivo_monolayer_comparison.png'), dpi=300, bbox_inches='tight')
+        #plt.show()
+
+def apply_savgol(column):
+    return savgol_filter(column, window_length=15, polyorder=3)
