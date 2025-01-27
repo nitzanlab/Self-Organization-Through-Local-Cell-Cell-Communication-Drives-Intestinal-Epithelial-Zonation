@@ -2,7 +2,7 @@ from paper.extractedData.load_csvs import *
 from utils.imports import *
 def plot_erosion_rings():
     data = load_unperturbed_monolayer_transcripts()
-    xedges, yedges, binary_mask_cleaned, extent = compute_unperturbed_monolayer_spatial_mask(save_to_pickle=False)
+    xedges, yedges, binary_mask_cleaned, extent = compute_unperturbed_monolayer_spatial_mask(save_to_pickle=True)
     plot_binary_mask_cleaned(binary_mask_cleaned, extent)
     check_mask_fidelity(data, binary_mask_cleaned, extent)
     ring_masks = calculate_ring_masks(binary_mask_cleaned, xedges, yedges, num_iterations=NUM_ITERATIONS, plot_rings=False, save_rings=True)
@@ -22,7 +22,16 @@ def plot_erosion_rings():
     return result_dict
 
 def plot_erosion_rings_from_saved_components():
-    pass
+    xedges, yedges, binary_mask_cleaned, ring_masks, extent = load_erosion_components()
+    #plot full monolayer erosion rings
+
+    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, erosion_step=EROSION_STEP,
+                       num_iterations=NUM_ITERATIONS, plot_rings=True,
+                       image_x_range=None, image_y_range=None)
+    #plot erosion rings on zoomed in region
+    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=[1500, 2000],
+                       image_y_range=[1500, 2000])
+
 
 def plot_zoomed_in_erosion_rings():
     xedges, yedges, binary_mask_cleaned, extent = compute_unperturbed_monolayer_spatial_mask(save_to_pickle=False)
@@ -30,6 +39,7 @@ def plot_zoomed_in_erosion_rings():
                                       plot_rings=False, save_rings=True)
     plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=[1500, 2000],
                        image_y_range=[1500, 2000])
+
 def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings=True, save_rings=True):
     data = load_unperturbed_monolayer_transcripts()
     densities = []
@@ -92,6 +102,7 @@ def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings
         # Update previous mask
         previous_mask = eroded_mask.copy()
     if save_rings:
+
         with open(
                 r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\monolayer_ring_masks.pkl',
                 'wb') as f:
@@ -203,8 +214,6 @@ def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, 
     color_per_ring = np.arange(len(ring_masks))
     for ring_mask, ring_color in zip(ring_masks, color_per_ring):
         density_image[ring_mask] += ring_color
-    # Plot the density image
-    plt.figure(figsize=(8, 6), facecolor='white')  # Set figure background to white
     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
 
     if image_x_range is not None:
@@ -212,18 +221,113 @@ def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, 
         extent = [xedges[image_x_range[0]], xedges[image_x_range[1]], yedges[image_y_range[0]],
                   yedges[image_y_range[1]]]
         binary_mask = binary_mask[image_x_range[0]:image_x_range[1], image_y_range[0]:image_y_range[1]]
-    # Set the colormap and vmin so 0 values appear as white
+
+    # Create figure and axis
+    fig, ax = plt.subplots(figsize=(8, 8))
     cmap = plt.get_cmap('hsv', len(ring_masks))
     cmap.set_under('white')
     background_image = np.where(binary_mask, 0.5, 1.0)
-    plt.imshow(background_image, extent=extent, origin='lower', cmap='gray', aspect='auto', vmin=0, vmax=1)
-    img = plt.imshow(density_image, extent=extent, origin='lower', cmap=cmap, aspect='auto', vmin=0.01, alpha=0.6)
-    plt.title(f'Transcripts Density Rings')
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.gca().set_aspect('equal', adjustable='box')
-    plt.tight_layout(rect=[0, 0, 0.85, 1])
+    ax.imshow(np.where(binary_mask, 0.5, 1.0), extent=extent, origin='lower', cmap='gray', aspect='auto', vmin=0,
+              vmax=1)
+    img = ax.imshow(density_image, extent=extent, origin='lower', cmap=cmap, aspect='auto', vmin=0.01, alpha=0.6)
+
+    # Titles and labels
+    ax.set_title('Transcripts Density Rings', fontsize=14)
+    ax.set_xlabel('x', fontsize=12)
+    ax.set_ylabel('y', fontsize=12)
+
+    # Add scale bar manually
+    if image_x_range is not None:
+        scale_bar_length = 10  # Scale bar length in micrometers
+        pixel_size = 107.11  # Pixel size in nanometers
+        scale_bar_length_nm = scale_bar_length * 1000
+        scale_bar_length_pixels = scale_bar_length_nm / pixel_size  # Convert to pixels
+
+        # Position the scale bar
+        scale_bar_x_start = 0.1  # Fraction of the width from the left
+        scale_bar_y_pos = 0.05  # Fraction of the height from the bottom
+        bar_start_x = extent[0] + scale_bar_x_start * (extent[1] - extent[0])
+        bar_end_x = bar_start_x + scale_bar_length_pixels * (extent[1] - extent[0]) / density_image.shape[1]
+        bar_y = extent[2] + scale_bar_y_pos * (extent[3] - extent[2])
+
+        # Plot scale bar
+        ax.plot([bar_start_x, bar_end_x], [bar_y, bar_y], color='black', linewidth=3, solid_capstyle='butt')
+
+        # Add scale bar label
+        ax.text((bar_start_x + bar_end_x) / 2, bar_y - 0.02 * (extent[3] - extent[2]),
+                f'{scale_bar_length} µm', color='black', fontsize=12, ha='center', va='top')
+        file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH,
+                                 'erosion_rings_zoom_in.pdf' if image_x_range else 'erosion_rings_zoom_in.pdf')
+    else:
+        file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH,
+                                 'erosion_rings_zoom_in.pdf' if image_x_range else 'erosion_rings_full_monolayer.pdf')
+    # Remove axis ticks and save
+    ax.axis('off')
+    os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
+    plt.savefig(file_name, format='pdf', bbox_inches='tight')
     plt.show()
+
+
+# def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, num_iterations=30, plot_rings=True,
+#                        image_x_range=None, image_y_range=None):
+#     density_image = np.zeros_like(binary_mask, dtype=float)
+#     color_per_ring = np.arange(len(ring_masks))
+#     for ring_mask, ring_color in zip(ring_masks, color_per_ring):
+#         density_image[ring_mask] += ring_color
+#     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+#
+#     if image_x_range is not None:
+#         density_image = density_image[image_x_range[0]:image_x_range[1], image_y_range[0]:image_y_range[1]]
+#         extent = [xedges[image_x_range[0]], xedges[image_x_range[1]], yedges[image_y_range[0]],
+#                   yedges[image_y_range[1]]]
+#         binary_mask = binary_mask[image_x_range[0]:image_x_range[1], image_y_range[0]:image_y_range[1]]
+#
+#     # Set the colormap and vmin so 0 values appear as white
+#     cmap = plt.get_cmap('hsv', len(ring_masks))
+#     cmap.set_under('white')
+#     background_image = np.where(binary_mask, 0.5, 1.0)
+#
+#     fig, ax = plt.subplots(figsize=(8, 8))  # Create a figure with proper aspect ratio
+#     ax.imshow(background_image, extent=extent, origin='lower', cmap='gray', aspect='auto', vmin=0, vmax=1)
+#     img = ax.imshow(density_image, extent=extent, origin='lower', cmap=cmap, aspect='auto', vmin=0.01, alpha=0.6)
+#     ax.set_title('Transcripts Density Rings')
+#     ax.set_xlabel('x')
+#     ax.set_ylabel('y')
+#     ax.set_aspect('equal', adjustable='box')
+#
+#     # Add the scale bar under the image
+#     scale_bar_length = 10  # Scale bar length in µm
+#     pixel_size = 107.11  # Size of one pixel in nm
+#
+#     # Convert scale bar length from µm to nm
+#     scale_bar_length_nm = scale_bar_length * 1000
+#
+#     # Calculate the scale bar length in pixels
+#     scale_bar_length_pixels = scale_bar_length_nm / pixel_size
+#
+#     # Position the scale bar in data coordinates
+#     scale_bar_start_x = xedges[0] + 0.05 * (xedges[-1] - xedges[0])  # Slightly inset from the left
+#     scale_bar_end_x = scale_bar_start_x + scale_bar_length_pixels * (xedges[-1] - xedges[0]) / density_image.shape[1]
+#     scale_bar_y = yedges[0] - 0.05 * (yedges[-1] - yedges[0])  # Below the image
+#
+#     ax.plot([scale_bar_start_x, scale_bar_end_x], [scale_bar_y, scale_bar_y],
+#             color='black', linewidth=3, solid_capstyle='butt')
+#
+#     # Add the scale bar label
+#     ax.text((scale_bar_start_x + scale_bar_end_x) / 2, scale_bar_y - 0.02 * (yedges[-1] - yedges[0]),
+#             f'{scale_bar_length} µm', color='black', fontsize=12, ha='center', va='top')
+#
+#     # Remove axis
+#     ax.axis('off')
+#
+#     # Save and show
+#     os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
+#     file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH,
+#                              'erosion_rings_zoom_in.pdf' if image_x_range else 'erosion_rings_full_monolayer.pdf')
+#     plt.savefig(file_name, format='pdf', bbox_inches='tight')
+#     plt.show()
+
+
 
 
 def compute_transcript_density_in_rings(gene_name, binary_mask, erosion_step, num_iterations, data, xedges, yedges,

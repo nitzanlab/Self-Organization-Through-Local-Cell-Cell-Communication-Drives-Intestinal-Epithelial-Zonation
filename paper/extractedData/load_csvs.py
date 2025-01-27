@@ -50,7 +50,51 @@ def load_unperturbed_monolayer_gene_densities():
         result_dict = pickle.load(f)
     return result_dict
 
-#TODO load erosion plots
+
+def map_monolayer_to_transcript_density_profiles(adata, genes, begin=3, end=14, binned=True):
+    genes_in_monolayer = [gene for gene in genes if gene in adata.var_names]
+    transcript_df = get_transcript_density_profile_for_monolayer_mapping(begin, end, genes)[genes_in_monolayer]
+    if binned:
+        binned_df = transcript_df.groupby(np.arange(len(transcript_df)) // 2).mean()
+        transcript_df = (binned_df - binned_df.min()) / (binned_df.max() - binned_df.min())
+    # sns.heatmap(transcript_df.T)
+    # plt.title('transcript')
+    # plt.show()
+    adata = adata[adata[:, genes].X.sum(axis=1) > 1e-1]
+    #adata_subset = adata[:, genes_in_monolayer].copy()
+    adata_X = adata.X.copy()
+
+    # Perform min-max scaling for each gene (column)
+    min_vals = adata_X.min(axis=0)
+    max_vals = adata_X.max(axis=0)
+    # Avoid division by zero for constant columns
+    range_vals = np.maximum(max_vals - min_vals, 1e-9)
+
+    # Normalize each gene to the range [0, 1]
+    adata.X = (adata_X - min_vals) / range_vals
+    cosine_sim_per_position = cosine_similarity(adata[:,genes_in_monolayer].X, transcript_df)
+    row_sums = np.sum(cosine_sim_per_position, axis=1)
+    #cosine_sim_per_position_normalized = cosine_sim_per_position/row_sums[:,np.newaxis]
+    zero_sum_rows = (row_sums == 0)
+    cosine_sim_per_position[~zero_sum_rows] = cosine_sim_per_position[~zero_sum_rows] / row_sums[
+         ~zero_sum_rows, np.newaxis]
+    cosine_sim_per_position[zero_sum_rows] = 1 / cosine_sim_per_position.shape[1]
+    adata.obsm['transcript_zone_dist'] = cosine_sim_per_position
+    adata.obs['transcript_exp_pos'] = cosine_sim_per_position@np.arange(cosine_sim_per_position.shape[1])
+    max_pos = np.argmax(cosine_sim_per_position, axis=1)
+    adata.obs['transcript_density_max_pos'] = max_pos
+    return adata
+
+def get_transcript_density_profile_for_monolayer_mapping(begin=3, end=13, genes=ORGANOID_GENE_NAMES_NOGFP):
+    transcript_density = load_unperturbed_monolayer_gene_densities()
+    transcript_df = pd.DataFrame({gene: values['densities'] for gene, values in transcript_density.items()})[
+                        genes].iloc[:20]  # like rings
+    transcript_df = transcript_df.iloc[begin:end]
+    transcript_df_normalized = (transcript_df - transcript_df.min())/(transcript_df.max() - transcript_df.min())
+
+    #TODO additional normalization?
+    return transcript_df_normalized
+
 def save_to_pickle_monolayer_masking_components(xedges, yedges, binary_mask_cleaned, extent):
     save_one_monolayer_masking_component_to_pickle(xedges, 'xedges')
     save_one_monolayer_masking_component_to_pickle(yedges, 'yedges')
@@ -68,7 +112,7 @@ def load_erosion_components():
     yedges = load_one_monolayer_masking_component_from_pickle('yedges')
     binary_mask_cleaned = load_one_monolayer_masking_component_from_pickle('binary_mask_cleaned')
     extent = load_one_monolayer_masking_component_from_pickle('extent')
-    ring_masks = load_one_monolayer_masking_component_from_pickle('ring_masks')
+    ring_masks = load_one_monolayer_masking_component_from_pickle('monolayer_ring_masks')
     return xedges, yedges, binary_mask_cleaned, ring_masks, extent
 
 
@@ -179,3 +223,23 @@ def preprocess_LCM_atlas_only_core_reference_genes(LCM_atlas ,genes_list):
     LCM_atlas_meaned_normalized.set_index(filted_LCM_atlas['external_gene_name'], inplace=True)
     LCM_rearranged = LCM_atlas_meaned_normalized.loc[ordered_filtered_genes_list]
     return LCM_rearranged, ordered_filtered_genes_list
+
+def get_invivo_smooth_exp(gene_names):
+    invivo_exp_raw = load_TPM_LCM_intestine_atlas()
+    invivo_exp, genes = get_LCM_atlas_gene_subset(invivo_exp_raw, gene_names)
+    diffs = np.diff(invivo_exp, axis=1)
+    # Identify rows that are monotonically increasing or decreasing
+    monotonic_increasing = np.all(diffs >= 0, axis=1)
+    monotonic_decreasing = np.all(diffs <= 0, axis=1)
+    # Count the number of sign changes (inflection points)
+    sign_changes = np.sum(np.diff(np.sign(diffs), axis=1) != 0, axis=1)
+    # Identify rows that have exactly one sign change (peaking rows)
+    peaking_rows = (sign_changes == 1)
+    # Combine conditions: Monotonic or peaking rows
+    valid_rows = monotonic_increasing | monotonic_decreasing | peaking_rows
+    # Get the indices of rows that satisfy these conditions
+    valid_row_indices = np.where(valid_rows)[0]
+    invivo_smooth_exp = invivo_exp.iloc[valid_row_indices]
+    #sns.heatmap(invivo_smooth_exp, cmap='Reds')
+    #plt.show()
+    return invivo_smooth_exp

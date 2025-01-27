@@ -5,8 +5,8 @@ match those observed in the canonical zonation genes in in-vivo intestine
 """
 from paper.extractedData.load_csvs import *
 from paper.plotScripts.erosion_calculations import *
-def plot_all_autonomous_figure_plots():
-    ### panel a is schematic
+def plot_all_autonomous_figure_plots(saved_datasets=False):
+    ### panel a is schematic ,created in Biorender.com
     ###panel b : #TODO:Yael
 
 
@@ -15,15 +15,19 @@ def plot_all_autonomous_figure_plots():
     ###panel d: ##Todo:Yael
 
     ###panel e: bottom/(bottom+top) villus gene expression pattern
-    #plot_gene_groups_expression_on_wt_monolayer(['Ada','Apoa4','Apoa1'], ['Sis','Alpi'], 'top', 'bottom')
+    plot_gene_groups_expression_on_wt_monolayer(['Ada','Apoa4','Apoa1'], ['Sis','Alpi'], 'top', 'bottom')
 
     ###panel f: erosion rings
-    #result_dict = plot_erosion_rings()
-
     ###panel g: erosion expression profiles
-    #result_dict = load_transcript_densities_unperturbed_monolayer()
-    #plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True)
+    #if the erosion was already conducted, saved_datasets can be set to True, and thus plot from loaded data
+    # from pickle, otherwise, calculate from scratch and save
+    if saved_datasets:
+        plot_erosion_rings_from_saved_components()
+        result_dict = load_transcript_densities_unperturbed_monolayer()
+    else:
+        result_dict = plot_erosion_rings()
 
+    plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True)
     #panel h: heatmap comparison in vivo reconstruction to monolayer, erosion measured expression from edge to interior
     #plot_wt_monolayer_gene_density_to_invivo_comparisons()
     expression_profile_heatmap_comparison_invivo_gene_density(genes_in_order_density_measure)

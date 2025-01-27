@@ -39,11 +39,14 @@ XY_SPACING = 10
 EROSION_STEP = 5
 NUM_ITERATIONS = 30
 
+
+
 AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','autonomous_zonation_figure_plots')
 CONTINUOUS_REGENERATIVE_RESPONSE_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','continuous_regenerative_figure_plots')
 
 
-
+MID_X_RANGE = [9219, 17780]
+MID_Y_RANGE = [14269, 20986]
 
 CELL_TYPE_ANNOT_ORDER = ['regenerative', 'enterocyte','EEC','goblet_cells','stem_cells','paneth_cells','Tuft_cells']
 ALL_CELL_TYPES_PLOT_ORDER =['EEC','Tuft_cells','paneth_cells','goblet_cells','stem_cells','enterocyte','regenerative']
