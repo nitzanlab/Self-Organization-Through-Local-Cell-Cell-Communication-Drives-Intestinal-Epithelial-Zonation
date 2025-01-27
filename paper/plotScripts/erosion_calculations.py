@@ -264,7 +264,10 @@ def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, 
     # Remove axis ticks and save
     ax.axis('off')
     os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
-    plt.savefig(file_name, format='pdf', bbox_inches='tight')
+
+    with PdfPages("output.pdf") as pdf:
+        plt.savefig(pdf, format='pdf', bbox_inches='tight')
+    #plt.savefig(file_name, format='pdf', bbox_inches='tight')
     plt.show()
 
 
