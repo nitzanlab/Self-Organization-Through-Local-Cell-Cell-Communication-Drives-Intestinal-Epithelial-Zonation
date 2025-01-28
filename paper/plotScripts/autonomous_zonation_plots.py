@@ -15,19 +15,19 @@ def plot_all_autonomous_figure_plots(saved_datasets=False):
     ###panel d: ##Todo:Yael
 
     ###panel e: bottom/(bottom+top) villus gene expression pattern
-    plot_gene_groups_expression_on_wt_monolayer(['Ada','Apoa4','Apoa1'], ['Sis','Alpi'], 'top', 'bottom')
+    #plot_gene_groups_expression_on_wt_monolayer(['Ada','Apoa4','Apoa1'], ['Sis','Alpi'], 'top', 'bottom')
 
     ###panel f: erosion rings
     ###panel g: erosion expression profiles
     #if the erosion was already conducted, saved_datasets can be set to True, and thus plot from loaded data
     # from pickle, otherwise, calculate from scratch and save
-    if saved_datasets:
-        plot_erosion_rings_from_saved_components()
-        result_dict = load_transcript_densities_unperturbed_monolayer()
-    else:
-        result_dict = plot_erosion_rings()
-
-    plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True)
+    # if saved_datasets:
+    #     plot_erosion_rings_from_saved_components()
+    #     result_dict = load_transcript_densities_unperturbed_monolayer()
+    # else:
+    #     result_dict = plot_erosion_rings()
+    result_dict = load_transcript_densities_unperturbed_monolayer()
+    #plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True, normalize=True)
     #panel h: heatmap comparison in vivo reconstruction to monolayer, erosion measured expression from edge to interior
     #plot_wt_monolayer_gene_density_to_invivo_comparisons()
     expression_profile_heatmap_comparison_invivo_gene_density(genes_in_order_density_measure)
@@ -80,19 +80,25 @@ def expression_profile_heatmap_comparison_invivo_gene_density(gene_set):
     invivo_exp_normalized = (invivo_exp.T - invivo_exp.T.min(axis=0)) / (invivo_exp.T.max(axis=0) - invivo_exp.T.min(axis=0))
     transcript_heatmap = sns.heatmap(gene_density_normalized.iloc[:,:-1], vmin=0, vmax=1, cmap='plasma')
     colorbar = transcript_heatmap.collections[0].colorbar
-    colorbar.set_label('normalized gene expression')
-    plt.xlabel('iterations')
-    plt.xticks(rotation=0)
-    plt.ylabel('genes')
+    colorbar.set_label('Normalized Gene Expression')
+    avg_iteration_width = load_iteration_average_width()
+    dist_to_edge = np.round(np.arange(4, 4+gene_density_df.shape[0]) * avg_iteration_width, 2)
+    plt.xticks(np.arange(gene_density_df.shape[0]), dist_to_edge)
+    plt.xlabel('Distance to Monolayer Edge(μm)')
+    plt.xticks(rotation=45)
+    plt.ylabel('Genes')
     plt.yticks()
-    plt.title('transcript density profiles')
+    plt.title('Transcript Density Profiles')
     plt.tight_layout()
+    os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
+    file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, 'monolayer_transcript_density_expression_heatmap.pdf')
+    plt.savefig(file_name, format='pdf')
     plt.show()
 
-    sns.heatmap(invivo_exp_normalized.T, vmin=0, vmax=1, cmap='plasma')
-    plt.title('invivo expression profiles')
-    plt.tight_layout()
-    plt.show()
+    # sns.heatmap(invivo_exp_normalized.T, vmin=0, vmax=1, cmap='plasma')
+    # plt.title(r"$\it{In\ Vivo}$ Expression Profiles")
+    # plt.tight_layout()
+    # plt.show()
 
     reconstruction_normalized = (reconstruction_df.T - reconstruction_df.T.min(axis=0)) / (
                 reconstruction_df.T.max(axis=0) - reconstruction_df.T.min(axis=0))
@@ -100,13 +106,17 @@ def expression_profile_heatmap_comparison_invivo_gene_density(gene_set):
     reconstruction_normalized.rename(columns={f'V{i}_mean': f'V{i}' for i in range(1, 7)}, inplace=True)
     recon_heatmap = sns.heatmap(reconstruction_normalized, cmap='plasma')
     colorbar = recon_heatmap.collections[0].colorbar
-    colorbar.set_label('normalized gene expression')
-    plt.xlabel('villus top to bottom', fontsize=16)
-    plt.xticks(rotation=0, fontsize=14)
-    plt.ylabel('genes', fontsize=16)
-    plt.yticks(fontsize=14)
-    plt.title('invivo reconstruction')
+    colorbar.set_label('Normalized Fene expression')
+    plt.xlabel('Villus Top to Bottom')
+    plt.xticks(rotation=0)
+    plt.ylabel('Genes')
+    plt.yticks()
+    #plt.title(r"\textit{In Vivo} reconstruction")
+    plt.title(r"$\it{In\ Vivo}$ Expression Profiles Reconstructed")
     plt.tight_layout()
+    os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
+    file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, 'invivo_reconstruction_expression_heatmap.pdf')
+    plt.savefig(file_name, format='pdf')
     plt.show()
 
 def mean_gene_exp_per_zone_in_invivo_reconstruction_no_crypt():

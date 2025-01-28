@@ -5,21 +5,21 @@ def plot_erosion_rings():
     xedges, yedges, binary_mask_cleaned, extent = compute_unperturbed_monolayer_spatial_mask(save_to_pickle=True)
     plot_binary_mask_cleaned(binary_mask_cleaned, extent)
     check_mask_fidelity(data, binary_mask_cleaned, extent)
-    ring_masks = calculate_ring_masks(binary_mask_cleaned, xedges, yedges, num_iterations=NUM_ITERATIONS, plot_rings=False, save_rings=True)
-    result_dict = compute_transcript_density_in_rings_all_genes(
-        binary_mask=binary_mask_cleaned,
-        erosion_step=5,
-        num_iterations=30,
-        data=data[data['name'] == 'Nupr1'],
-        xedges=xedges,
-        yedges=yedges,
-        xy_spacing=XY_SPACING
-    )
-    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, erosion_step=EROSION_STEP, num_iterations=NUM_ITERATIONS, plot_rings=True,
-                       image_x_range=None, image_y_range=None)
-    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=[1500, 2000],
-                       image_y_range=[1500, 2000])
-    return result_dict
+    ring_masks, avg_ring_width = calculate_ring_masks(binary_mask_cleaned, xedges, yedges, num_iterations=NUM_ITERATIONS, plot_rings=False, save_rings=False)
+    # result_dict = compute_transcript_density_in_rings_all_genes(
+    #     binary_mask=binary_mask_cleaned,
+    #     erosion_step=5,
+    #     num_iterations=30,
+    #     data=data[data['name'] == 'Nupr1'],
+    #     xedges=xedges,
+    #     yedges=yedges,
+    #     xy_spacing=XY_SPACING
+    # )
+    # plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, erosion_step=EROSION_STEP, num_iterations=NUM_ITERATIONS, plot_rings=True,
+    #                    image_x_range=None, image_y_range=None)
+    # plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=[1500, 2000],
+    #                    image_y_range=[1500, 2000])
+    # return result_dict
 
 def plot_erosion_rings_from_saved_components():
     xedges, yedges, binary_mask_cleaned, ring_masks, extent = load_erosion_components()
@@ -66,14 +66,16 @@ def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings
     # Initialize previous mask as the initial mask
     previous_mask = binary_mask.copy()
 
+    avg_ring_widths = []
     for i in range(num_iterations):
         print(f"Iteration {i + 1} of {num_iterations}")
         # Erode the mask
         selem = disk(EROSION_STEP)
         eroded_mask = erosion(previous_mask, selem)
-
         # Compute the ring region
         ring_region = previous_mask & (~eroded_mask)
+        avg = calculate_iteration_width(previous_mask, eroded_mask)
+        avg_ring_widths.append(avg)
 
         # If the ring region is empty, break the loop
         if not ring_region.any():
@@ -101,12 +103,18 @@ def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings
 
         # Update previous mask
         previous_mask = eroded_mask.copy()
+    arr_avg = np.array(avg_ring_widths)
+    print(np.mean(arr_avg[np.isfinite(avg_ring_widths)]))
     if save_rings:
 
         with open(
                 r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\monolayer_ring_masks.pkl',
                 'wb') as f:
             pickle.dump(ring_masks, f)
+    with open(
+            r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\iteration_widths.pkl',
+            'wb') as f:
+        pickle.dump(arr_avg[np.isfinite(avg_ring_widths)], f)
     # Plot the rings with colors representing densities
     if plot_rings and ring_masks:
         # Create an array to hold the density values for each pixel
@@ -130,9 +138,34 @@ def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings
         plt.ylabel('y')
         plt.gca().set_aspect('equal', adjustable='box')
         plt.show()
+    print(avg_ring_widths)
+    arr_avg = np.array(avg_ring_widths)
+    print(np.mean(arr_avg[np.isfinite(avg_ring_widths)]))
+    return ring_masks, np.array(avg_ring_widths) #densities, areas, counts
 
-    return ring_masks #densities, areas, counts
+def calculate_iteration_width(mask1, mask2):
+    ring_mask = mask1 & ~mask2
+    labeled_ring = label(ring_mask)
+    labeled_outer = label(mask1)
 
+    # Find the properties of the labeled regions
+    region_ring = regionprops(labeled_ring)[0]
+    region_mask = regionprops(labeled_outer)[0]
+
+    # Area and perimeter of the ring
+    ring_area = region_ring.area
+    ring_perimeter = region_mask.perimeter
+
+    # Correct the area and perimeter back to original dimensions
+    corrected_ring_area = ring_area*(XY_SPACING ** 2)
+    corrected_ring_perimeter = ring_perimeter*(XY_SPACING)
+
+    # Calculate the average width of the ring based on the corrected perimeter
+    average_ring_width = corrected_ring_area / corrected_ring_perimeter
+
+    # Convert to micrometers
+    average_ring_width_um = average_ring_width * PIXEL2NM / 1000
+    return average_ring_width_um
 
 def compute_unperturbed_monolayer_spatial_mask(save_to_pickle=True):
     #Step 1: load transcripts
@@ -229,7 +262,7 @@ def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, 
     background_image = np.where(binary_mask, 0.5, 1.0)
     ax.imshow(np.where(binary_mask, 0.5, 1.0), extent=extent, origin='lower', cmap='gray', aspect='auto', vmin=0,
               vmax=1)
-    img = ax.imshow(density_image, extent=extent, origin='lower', cmap=cmap, aspect='auto', vmin=0.01, alpha=0.6)
+    img = ax.imshow(density_image, extent=extent, origin='lower', cmap=cmap, aspect='auto', vmin=0.01, alpha=0.8)
 
     # Titles and labels
     ax.set_title('Transcripts Density Rings', fontsize=14)
@@ -237,37 +270,36 @@ def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, 
     ax.set_ylabel('y', fontsize=12)
 
     # Add scale bar manually
-    if image_x_range is not None:
-        scale_bar_length = 10  # Scale bar length in micrometers
-        pixel_size = 107.11  # Pixel size in nanometers
-        scale_bar_length_nm = scale_bar_length * 1000
-        scale_bar_length_pixels = scale_bar_length_nm / pixel_size  # Convert to pixels
 
-        # Position the scale bar
-        scale_bar_x_start = 0.1  # Fraction of the width from the left
-        scale_bar_y_pos = 0.05  # Fraction of the height from the bottom
-        bar_start_x = extent[0] + scale_bar_x_start * (extent[1] - extent[0])
-        bar_end_x = bar_start_x + scale_bar_length_pixels * (extent[1] - extent[0]) / density_image.shape[1]
-        bar_y = extent[2] + scale_bar_y_pos * (extent[3] - extent[2])
+    scale_bar_length = 100  # Scale bar length in micrometers
+    pixel_size = 107.11*100 # Pixel size in nanometers
+    scale_bar_length_nm = scale_bar_length *(1000) #1000 for nanometer, but everything is ten times larger in each axis than a pixel already
+    scale_bar_length_pixels = scale_bar_length_nm / pixel_size  # Convert to pixels
 
-        # Plot scale bar
-        ax.plot([bar_start_x, bar_end_x], [bar_y, bar_y], color='black', linewidth=3, solid_capstyle='butt')
+    # Position the scale bar
+    scale_bar_x_start = 0.1  # Fraction of the width from the left
+    scale_bar_y_pos = 0.05  # Fraction of the height from the bottom
+    bar_start_x = extent[0] + scale_bar_x_start * (extent[1] - extent[0])
+    bar_end_x = bar_start_x + scale_bar_length_pixels * (extent[1] - extent[0]) / density_image.shape[1]
+    bar_y = extent[2] + scale_bar_y_pos * (extent[3] - extent[2])
+
+    # Plot scale bar
+    ax.plot([bar_start_x, bar_end_x], [bar_y, bar_y], color='black', linewidth=3, solid_capstyle='butt')
 
         # Add scale bar label
-        ax.text((bar_start_x + bar_end_x) / 2, bar_y - 0.02 * (extent[3] - extent[2]),
-                f'{scale_bar_length} µm', color='black', fontsize=12, ha='center', va='top')
+    ax.text((bar_start_x + bar_end_x) / 2, bar_y - 0.02 * (extent[3] - extent[2]),
+            f'{scale_bar_length} µm', color='black', fontsize=12, ha='center', va='top')
+
+    if image_x_range is not None:
         file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH,
-                                 'erosion_rings_zoom_in.pdf' if image_x_range else 'erosion_rings_zoom_in.pdf')
+                             'erosion_rings_zoom_in.pdf' if image_x_range else 'erosion_rings_zoom_in.pdf')
     else:
         file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH,
                                  'erosion_rings_zoom_in.pdf' if image_x_range else 'erosion_rings_full_monolayer.pdf')
     # Remove axis ticks and save
     ax.axis('off')
     os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
-
-    with PdfPages("output.pdf") as pdf:
-        plt.savefig(pdf, format='pdf', bbox_inches='tight')
-    #plt.savefig(file_name, format='pdf', bbox_inches='tight')
+    plt.savefig(file_name, format='pdf', bbox_inches='tight')
     plt.show()
 
 
@@ -378,7 +410,7 @@ def compute_transcript_density_in_rings(gene_name, binary_mask, erosion_step, nu
 
     # Initialize previous mask as the initial mask
     previous_mask = binary_mask.copy()
-
+    avg_ring_widths = []
     for i in range(num_iterations):
         print(f"Iteration {i + 1} of {num_iterations}")
         # Erode the mask
@@ -387,6 +419,8 @@ def compute_transcript_density_in_rings(gene_name, binary_mask, erosion_step, nu
 
         # Compute the ring region
         ring_region = previous_mask & (~eroded_mask)
+        avg = calculate_iteration_width(previous_mask, eroded_mask)
+        avg_ring_widths.append(avg)
 
         # If the ring region is empty, break the loop
         if not ring_region.any():
@@ -442,8 +476,9 @@ def compute_transcript_density_in_rings(gene_name, binary_mask, erosion_step, nu
         plt.ylabel('y')
         plt.gca().set_aspect('equal', adjustable='box')
         plt.show()
-
-    return densities, areas, counts
+    print(avg_ring_widths)
+    print(np.mean(avg_ring_widths))
+    return np.array(avg_ring_widths), densities, areas, counts
 
 
 def compute_transcript_density_in_rings_all_genes(binary_mask, erosion_step, num_iterations, data, xedges, yedges,
@@ -572,12 +607,12 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
     if spread_plots:
         # Create stacked subplots with shared X-axis
         num_genes = len(gene_names)
-        fig, axs = plt.subplots(num_genes, 1, sharex=True, figsize=(12, 4 * num_genes))
+        fig, axs = plt.subplots(num_genes, 1, sharex=True,figsize=(10, 4 * num_genes))
 
         if num_genes == 1:
             axs = [axs]  # Ensure axs is a list even if there is only one subplot
 
-        for ax, gene_name in zip(axs, gene_names):
+        for idx,(ax, gene_name) in enumerate(zip(axs, gene_names)):
             if gene_name in result_dict:
                 densities = (result_dict[gene_name]['densities'])[:-10] #before [::-1] inside
                 if densities:
@@ -589,16 +624,23 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
                             densities = [0] * len(densities)
                     iterations = np.arange(1, len(densities) + 1)
                     ax.plot(iterations, densities, marker='o', label=gene_name)
-                    ax.set_ylabel('Normalized Density' if normalize else 'Density')
-                    ax.set_title(f'Density Profile of {gene_name}')
+                    ax.set_ylabel('Normalized Density' if normalize else 'Density', fontsize=20)
                     ax.grid(True)
-                    ax.legend()
+                    if idx == 0:
+                        ax.set_title('Density Profiles of Genes in Successive Rings',fontsize=20)
+                    ax.legend(loc = 'upper left', fontsize=20)
                 else:
                     print(f"No density data available for gene '{gene_name}'.")
             else:
                 print(f"Gene '{gene_name}' not found in the results.")
-        axs[-1].set_xlabel('Iteration')
+        axs[-1].set_xlabel('Distance to Monolayer Edge (μm)', fontsize=20)
+        avg_iteration_width = load_iteration_average_width()
+        dist_to_edge = np.round(np.arange(1, len(densities) + 1) * avg_iteration_width, 2)
+        axs[-1].set_xticks(np.arange(1, len(densities) + 1),dist_to_edge)
         plt.tight_layout()
+        os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
+        file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, 'monolayer_zonation_expression_profiles.pdf')
+        plt.savefig(file_name, format='pdf')
         plt.show()
     else:
         # Plot all genes on the same plot
@@ -613,17 +655,20 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
                             densities = [d / max_density for d in densities]
                         else:
                             densities = [0] * len(densities)
-                    iterations = np.arange(1, len(densities) + 1)
+                    avg_iteration_width = load_iteration_average_width()
+                    iterations = np.round(np.arange(1, len(densities) + 1)*avg_iteration_width,2)
                     plt.plot(iterations, densities, marker='o', label=gene_name)
                 else:
                     print(f"No density data available for gene '{gene_name}'.")
             else:
                 print(f"Gene '{gene_name}' not found in the results.")
         plt.title('Density Profiles of Genes in Successive Rings')
-        plt.xlabel('Iteration')
-        plt.ylabel('Normalized Density' if normalize else 'Density (transcripts per unit area)')
+        plt.xlabel('Distance to Monolayer Edge (μm)')
+        plt.xticks(fontsize=20)
+        plt.ylabel('Normalized Density' if normalize else 'Density (transcripts per unit area)', fontsize=24)
         plt.grid(True)
         plt.legend()
+
         plt.show()
 
 def plot_wt_monolayer_gene_density_to_invivo_comparisons():
@@ -648,6 +693,10 @@ def plot_wt_monolayer_gene_density_to_invivo_comparisons():
         plt.title(f'{gene} invivo to enteroid monolayer expression profile comparison')
         plt.savefig(os.path.join(save_path, f'{gene}_invivo_monolayer_comparison.png'), dpi=300, bbox_inches='tight')
         #plt.show()
+
+def load_iteration_average_width():
+    iteration_widths = load_one_monolayer_masking_component_from_pickle('iteration_widths')
+    return np.mean(iteration_widths)
 
 def apply_savgol(column):
     return savgol_filter(column, window_length=15, polyorder=3)

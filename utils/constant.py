@@ -38,7 +38,7 @@ UNPERTURBED_ZOOMED_IN_Y_SEC_CELL_2 = [17750, 19500]
 XY_SPACING = 10
 EROSION_STEP = 5
 NUM_ITERATIONS = 30
-
+PIXEL2NM = 107.11
 
 
 AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','autonomous_zonation_figure_plots')
