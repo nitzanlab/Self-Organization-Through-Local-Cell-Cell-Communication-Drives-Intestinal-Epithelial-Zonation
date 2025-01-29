@@ -13,7 +13,7 @@ def plot_all_continuous_regenerative_response_plots():
     ###panel d: heatmap L metric in unperturbed data #TODO Yael
 
     ###panel e: regenerative expression in unperturbed monolayer
-    plot_gene_expression_across_cell_types_spatially('Msln',color='Greys')
+    #plot_gene_expression_across_cell_types_spatially('Msln',color='Greys')
     #plot_gene_expression_across_cell_types_spatially('Aldob', color='Purples')
 
     #plot_regenerative_expression_across_cell_types_spatially('Msln', x_region=UNPERTURBED_ZOOMED_IN_X_SEC_CELL_2, y_region=UNPERTURBED_ZOOMED_IN_Y_SEC_CELL_2)
@@ -29,7 +29,7 @@ def plot_all_continuous_regenerative_response_plots():
 
 
     ###panel g: regenerative expression neighborhood correlation
-    #calculate_regenerative_gene_expression_neighborhood_similarity(ALL_CELL_TYPE_GENES)
+    calculate_regenerative_gene_expression_neighborhood_similarity(ALL_CELL_TYPE_GENES)
 
 
 def plot_gene_expression_across_cell_types_spatially(goi, x_region=UNPERTURBED_ZOOMED_IN_X, y_region=UNPERTURBED_ZOOMED_IN_Y, title='', color='Oranges'):

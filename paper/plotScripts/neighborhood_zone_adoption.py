@@ -14,7 +14,7 @@ def plot_all_neighborhood_zone_adoption_plots():
     #plot_inserted_cells_expected_zones_spatially()
 
     ###panel d: correlation in expected zone to neighbors
-    plot_expected_zone_correlations(ORGANOID_GENE_NAMES_NOGFP, num_neigh=5)
+    #plot_expected_zone_correlations(ORGANOID_GENE_NAMES_NOGFP, num_neigh=5)
 
     #plot_expected_zone_correlations(ZONE_MAPPING_GENES, num_neigh=5)
 
@@ -26,9 +26,72 @@ def plot_all_neighborhood_zone_adoption_plots():
     # plot_inserted_cells_zone_confusion('72hr')
 
     ###panel g: gene contribution to zone confusion
-    # gene_confusion_contribution('72hr', ZONE_MAPPING_GENES, 3, 14, is_sprinkled=True)
-    # gene_confusion_contribution('12hr', ZONE_MAPPING_GENES, 3, 14, is_sprinkled=True)
+    plot_zone_confusion_gene_contribution('72hr', genes=ZONE_MAPPING_GENES)
 
+
+def plot_zone_confusion_gene_contribution(tmpt, genes=ZONE_MAPPING_GENES):
+    all_confusion_heatmaps = []
+    for entropy_range in ENTROPY_RANGES:
+        gene_contribution = plot_zone_dist_and_expression_with_similar_zone_entropy(tmpt, genes, 3, 14, True,
+                                                                entropy_range)
+        all_confusion_heatmaps.append(gene_contribution)
+    vmin = min(d.min() for d in all_confusion_heatmaps)
+    vmax = max(d.max() for d in all_confusion_heatmaps)
+
+    quadmesh = None
+    # Create figure and subplots
+    fig, axes = plt.subplots(1, 4, figsize=(8, 3), sharex=True, gridspec_kw={'wspace': 0.05})
+    fig.suptitle("Gene Zone Confusion Contribution", fontweight="bold")
+    for i, ax in enumerate(axes): # Only add colorbar to the last subplot
+        hm = sns.heatmap(all_confusion_heatmaps[i], ax=ax, vmin=vmin, xticklabels=genes,vmax=vmax, cmap="plasma", cbar=False)
+        quadmesh = hm
+        ax.set_title(f"{ENTROPY_RANGES[i][0]}-{ENTROPY_RANGES[i][1]}")  # Set title for each heatmap
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right", fontweight="bold")
+        ax.set_xlabel("Genes")  # Label only x-axis (it will be shared)
+        ax.set_ylabel("")  # Remove y-axis labels for aesthetics
+        ax.set_yticks([])
+
+        if i==0:
+            ax.set_ylabel('Cells')
+        else:
+            ax.set_ylabel("")
+        ax.set_xticks# Remove y-axis labels for other heatmaps
+    # Create a separate colorbar on the right side
+    cbar_ax = fig.add_axes([0.92, 0.35, 0.02, 0.5])  # [x-position, y-position, width, height]
+    cbar = fig.colorbar(quadmesh.get_children()[0], cax=cbar_ax)  # Use get_children()[0] to access the heatmap colors
+    cbar.ax.set_ylabel("Zone Gene Contribution", fontweight="bold")  # Add colorbar title
+
+    # Adjust layout to prevent cutting off xticks
+    plt.subplots_adjust(left=0.05, right=0.9, top=0.85, bottom=0.35)  # Adjust right space for colorbar
+    os.makedirs(NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH, exist_ok=True)
+    file_name = os.path.join(NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH, 'gene_zone_contribution.pdf')
+    plt.savefig(file_name, format='pdf')
+    plt.show()
+
+
+def plot_zone_dist_and_expression_with_similar_zone_entropy(tmpt, genes, begin, end, is_sprinkled, entropy_range, num_cells=10):
+    adata = get_tmpt_all_rois_adata(tmpt)
+    adata = adata[adata[:, ZONE_MAPPING_GENES].X.sum(axis=1) > 0.1]
+    adata = map_monolayer_to_transcript_density_profiles(adata, genes, begin, end)
+    adata = get_transcript_density_entropy(adata)
+    title = ''
+    if is_sprinkled:
+        adata = adata[adata.obs['spc']]
+        title = 'GFP'
+    else:
+        adata = adata[~adata.obs['spc']]
+        title = 'non GFP'
+    adata_ent_range =  adata[(adata.obs['zone_entropy']>=entropy_range[0]) & (adata.obs['zone_entropy']<=entropy_range[1])]
+    random_cells_idx = np.random.choice(adata_ent_range.shape[0], size=num_cells, replace=False)
+    adata_ent_range_subset = adata_ent_range[random_cells_idx,:]
+    selected_data = adata_ent_range_subset.obsm['transcript_zone_dist']
+    sorted_indices = np.argsort(selected_data[:, 0])
+
+    adata_ent_range_subset = adata_ent_range[random_cells_idx, :]
+
+    gene_contribution = adata_ent_range_subset[:, genes].X[sorted_indices,:]
+    normalized_gene_contirbution = gene_contribution / (gene_contribution.sum(axis=1)[:, np.newaxis]+1e-3)
+    return normalized_gene_contirbution
 
 
 def plot_expected_cell_zones():
@@ -200,7 +263,7 @@ def expected_zone_distribution(tmpt, genes, begin, end):
     print(f"KS Statistic: {stat}, p-value: {p_value}")
     plt.xlabel('Expected Zone')
     plt.ylabel('Relative Density')
-    plt.legend()
+    plt.legend(loc='upper left')
     plt.tight_layout()
     os.makedirs(NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH, exist_ok=True)
     file_name = os.path.join(NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH, f'expected_zone_distribution_{tmpt}.pdf')
@@ -238,7 +301,7 @@ def plot_inserted_cells_zone_confusion(tmpt):
     plt.ylabel('density')
     plt.ylim(0, 6)
     plt.title(f'{tmpt} Zone Entropy')
-    plt.legend()
+    plt.legend(loc='upper left')
     os.makedirs(NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH, exist_ok=True)
     file_name = os.path.join(NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH, f'zone_confusion_distribution_{tmpt}.pdf')
     plt.savefig(file_name, format='pdf')
@@ -391,7 +454,7 @@ def plot_GFP_adata_signal_spatially(adata, signal_name, adata_type, zoned=False,
     plt.yticks([])
     plt.show()
 
-def gene_confusion_contribution(tmpt, genes,begin, end, is_sprinkled= True):
+def gene_confusion_contribution(tmpt,roi, genes,begin, end, is_sprinkled= True):
     #instead of mapping cells to positions using the transcript density profiles
     #get transcript density:
     transcript_df = get_transcript_density_profile_for_monolayer_mapping(begin, end, genes)
@@ -401,8 +464,7 @@ def gene_confusion_contribution(tmpt, genes,begin, end, is_sprinkled= True):
     # plt.title('trasncript df')
     # plt.show()
     #get gene confusion contribution per cell
-    adata = load_sprinkled_adata_hr_tmpt(tmpt, 'roi2')
-
+    adata = load_sprinkled_adata_hr_tmpt(tmpt, roi)
     adata = map_monolayer_to_transcript_density_profiles(adata, genes, begin, end, binned=True)
     adata = get_transcript_density_position_std(adata)
     if is_sprinkled:

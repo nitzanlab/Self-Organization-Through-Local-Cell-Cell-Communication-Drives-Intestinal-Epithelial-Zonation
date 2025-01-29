@@ -14,8 +14,9 @@ def plot_zonation_plasticity_plots(calculate = True):
 
     ###panel f: gene expression neighborhood correlation in inserted cells
     #plot_gene_expression_neighborhood_correlation_in_inserted_cells()
-    plot_gene_correlation_histograms_GFP_to_wt(len(ORGANOID_GENE_NAMES_NOGFP))
-    plot_gene_correlation_histograms_GFP_to_wt(20)
+    plot_gene_correlation_histograms_GFP_to_wt(len(ORGANOID_GENE_NAMES_NOGFP),'all_paneled_genes')
+    plot_gene_correlation_histograms_GFP_to_wt(20,
+                                            'top_20_moransi_genes')
 
     ###panel g: inserted cell neighborhood correlation across timepoints  #TODO Yael
 
@@ -26,7 +27,7 @@ def calculate_unperturbed_monolayer_morans_i(save=True):
 def calculate_unperturbed_monolayer_neighborhood_gene_expression_correlations(save=True):
     pass
 
-def plot_gene_correlation_histograms_GFP_to_wt(num_genes):
+def plot_gene_correlation_histograms_GFP_to_wt(num_genes, save_title):
     """
     This function plots the distribution of correlation in gene expression between a cell and its neighboring cells in the following
     three settings. 1) in the unperturbed monolayer 2) between inserted cells for 12hr and their non inserted neighboring cells , averaged across all rois,
@@ -59,14 +60,15 @@ def plot_gene_correlation_histograms_GFP_to_wt(num_genes):
     plt.axvline(np.mean(GFP_72hr_gene_corr), label='mean inserted 72hr ', color='orange', linestyle='--', linewidth=2)
     plt.axvline(np.mean(GFP_12hr_gene_corr), label='mean inserted 12hr', color='green', linestyle='--', linewidth=2)
     plt.axvline(np.mean(wt_non_GFP_gene_corr), label='mean unperturbed ', color='purple', linestyle='--', linewidth=2)
-    plt.legend()
-    plt.xlabel('Correlation')
-    plt.ylabel('Frequency')
-    plt.title(f'Neighboring Cells Gene Expression Correlation')
+    if num_genes == len(ORGANOID_GENE_NAMES_NOGFP):
+        plt.legend()
+        plt.xlabel('Correlation')
+        plt.ylabel('Frequency')
+        plt.title(f'Neighboring Cells Gene Expression Correlation')
     plt.tight_layout()
     os.makedirs(ZONATION_PLASTICITY_PLOTS_FOLDER_PATH, exist_ok=True)
     file_name = os.path.join(ZONATION_PLASTICITY_PLOTS_FOLDER_PATH,
-                             'neighborhood_expression_correlations_all_genes.pdf')
+                             f'{save_title}_neighborhood_expression_correlations_all_genes.pdf')
     plt.savefig(file_name, format='pdf')
     plt.show()
 
