@@ -107,6 +107,10 @@ def save_one_monolayer_masking_component_to_pickle(component, component_name):
     with open(fr'{save_path}','wb') as f:
         pickle.dump(component, f)
 
+def load_iteration_average_width():
+    iteration_widths = load_one_monolayer_masking_component_from_pickle('iteration_widths')
+    return np.mean(iteration_widths)
+
 def load_erosion_components():
     xedges = load_one_monolayer_masking_component_from_pickle('xedges')
     yedges = load_one_monolayer_masking_component_from_pickle('yedges')

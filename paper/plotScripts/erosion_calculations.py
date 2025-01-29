@@ -1,46 +1,85 @@
 from paper.extractedData.load_csvs import *
 from utils.imports import *
-def plot_erosion_rings():
+def calculate_eroded_transcription_densities(plot_erosion=True, save_components=True):
+    """
+    Thie function calculates the erosion components for measuring transcript densities in rings from the monolayer
+    edge, inwards. These transcript profiles
+    :param plot_erosion: boolean variable signifying if to plot the erosion rings
+    :param save_components: boolean variable signifying if to save the erosion components
+    :return:  result_dict: a dictionary holding the transcription profiles of the genes across the erosion rings
+    used for downstream analysis and comparison to in vivo villus zonation expression profiles
+    #TODO add the result dict structure more in detail
+    """
     data = load_unperturbed_monolayer_transcripts()
-    xedges, yedges, binary_mask_cleaned, extent = compute_unperturbed_monolayer_spatial_mask(save_to_pickle=True)
+    xedges, yedges, binary_mask_cleaned, extent = compute_unperturbed_monolayer_spatial_mask(save_to_pickle=save_components)
+    #view the binary mask of the full monolayer that with be eroded, uncomment to plot
     #plot_binary_mask_cleaned(binary_mask_cleaned, extent)
+    #sanity check to view the fidelity of the mask, uncomment to plot
     #check_mask_fidelity(data, binary_mask_cleaned, extent)
-    ring_masks, avg_ring_width = calculate_ring_masks(binary_mask_cleaned, xedges, yedges, num_iterations=NUM_ITERATIONS, plot_rings=False, save_rings=False)
-    # result_dict = compute_transcript_density_in_rings_all_genes(
-    #     binary_mask=binary_mask_cleaned,
-    #     erosion_step=5,
-    #     num_iterations=30,
-    #     data=data[data['name'] == 'Nupr1'],
-    #     xedges=xedges,
-    #     yedges=yedges,
-    #     xy_spacing=XY_SPACING
-    # )
-    # plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, erosion_step=EROSION_STEP, num_iterations=NUM_ITERATIONS, plot_rings=True,
-    #                    image_x_range=None, image_y_range=None)
-    # plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=[1500, 2000],
-    #                    image_y_range=[1500, 2000])
-    # return result_dict
+    ring_masks, avg_ring_width = calculate_ring_masks(binary_mask_cleaned, xedges, yedges, num_iterations=NUM_ITERATIONS, plot_rings=False, save_rings=save_components)
+    result_dict = compute_transcript_density_in_rings_all_genes(
+        binary_mask=binary_mask_cleaned,
+        erosion_step=5,
+        num_iterations=30,
+        data=data[data['name'] == 'Nupr1'],
+        xedges=xedges,
+        yedges=yedges,
+        xy_spacing=XY_SPACING)
+
+    if plot_erosion:
+        plot_erosion_rings_from_calculated_components(xedges, yedges, binary_mask_cleaned, ring_masks)
+    return result_dict
+
+def plot_erosion_rings_from_calculated_components(xedges, yedges, binary_mask_cleaned, ring_masks):
+    """
+    This function plots erosion rings , can be called directly following their calculation
+    """
+    #plots the erosion rings over the full monolayer
+    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, erosion_step=EROSION_STEP, num_iterations=NUM_ITERATIONS, plot_rings=True,
+                       image_x_range=None, image_y_range=None)
+    #plot the erosion on a zoomed in area
+    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=EROSION_RINGS_ZOOM_IN,
+                       image_y_range=EROSION_RINGS_ZOOM_IN)
 
 def plot_erosion_rings_from_saved_components():
-    xedges, yedges, binary_mask_cleaned, ring_masks, extent = load_erosion_components()
-    #plot full monolayer erosion rings
+    """
+    This function plots the erosion rings in which transcript density of each of the paneled genes
+    were measured. It can be used to plot the rings if the erosion components have already been calculated and saved
+    """
 
+    #load the components necessary for plotting the erosion rings
+    xedges, yedges, binary_mask_cleaned, ring_masks, extent = load_erosion_components()
+
+    #plot full monolayer erosion rings
     plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, erosion_step=EROSION_STEP,
                        num_iterations=NUM_ITERATIONS, plot_rings=True,
                        image_x_range=None, image_y_range=None)
     #plot erosion rings on zoomed in region
-    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=[1500, 2000],
-                       image_y_range=[1500, 2000])
+    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=EROSION_RINGS_ZOOM_IN,
+                       image_y_range=EROSION_RINGS_ZOOM_IN)
 
 
-def plot_zoomed_in_erosion_rings():
+def calculated_and_plot_zoomed_in_erosion_rings():
+    """
+    This function computes the erosion components for measuring transcript density in rings from
+    monolayer edge inwards and plots the erosion rings on a zoomed in region
+    """
+    #compute the erosion components
     xedges, yedges, binary_mask_cleaned, extent = compute_unperturbed_monolayer_spatial_mask(save_to_pickle=False)
+    #compute ring masks
     ring_masks = calculate_ring_masks(binary_mask_cleaned, xedges, yedges, num_iterations=NUM_ITERATIONS,
                                       plot_rings=False, save_rings=True)
-    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=[1500, 2000],
-                       image_y_range=[1500, 2000])
+    #plot the erosion steps on a zoomed in region
+    plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=EROSION_RINGS_ZOOM_IN,
+                       image_y_range=EROSION_RINGS_ZOOM_IN)
 
 def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings=True, save_rings=True):
+    """
+    This function calculates the ring masks in which in ring, the transcript densities for each gene are measured.
+    :param plot_rings: boolean: whether to plot the ring masks
+    :param save_rings: boolean: whether to save the ring masks
+    :return: returns the ring masks and the average ring width per iteration
+    """
     data = load_unperturbed_monolayer_transcripts()
     densities = []
     areas = []
@@ -105,17 +144,11 @@ def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings
         previous_mask = eroded_mask.copy()
     arr_avg = np.array(avg_ring_widths)
     print(np.mean(arr_avg[np.isfinite(avg_ring_widths)]))
-    if save_rings:
 
-        with open(
-                r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\monolayer_ring_masks.pkl',
-                'wb') as f:
-            pickle.dump(ring_masks, f)
-    with open(
-            r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\iteration_widths.pkl',
-            'wb') as f:
-        pickle.dump(arr_avg[np.isfinite(avg_ring_widths)], f)
-    # Plot the rings with colors representing densities
+    if save_rings:
+        save_one_monolayer_masking_component_to_pickle(ring_masks, 'monolayer_ring_masks')
+        save_one_monolayer_masking_component_to_pickle(arr_avg[np.isfinite(avg_ring_widths)],'iteration_widths')
+
     if plot_rings and ring_masks:
         # Create an array to hold the density values for each pixel
         density_image = np.zeros_like(binary_mask, dtype=float)
@@ -138,12 +171,16 @@ def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings
         plt.ylabel('y')
         plt.gca().set_aspect('equal', adjustable='box')
         plt.show()
+
     print(avg_ring_widths)
     arr_avg = np.array(avg_ring_widths)
     print(np.mean(arr_avg[np.isfinite(avg_ring_widths)]))
     return ring_masks, np.array(avg_ring_widths) #densities, areas, counts
 
 def calculate_iteration_width(mask1, mask2):
+    """
+    This function calculates the average width in micrometers of one ring
+    """
     ring_mask = mask1 & ~mask2
     labeled_ring = label(ring_mask)
     labeled_outer = label(mask1)
@@ -302,69 +339,6 @@ def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, 
     plt.savefig(file_name, format='pdf', bbox_inches='tight')
     plt.show()
 
-
-# def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, num_iterations=30, plot_rings=True,
-#                        image_x_range=None, image_y_range=None):
-#     density_image = np.zeros_like(binary_mask, dtype=float)
-#     color_per_ring = np.arange(len(ring_masks))
-#     for ring_mask, ring_color in zip(ring_masks, color_per_ring):
-#         density_image[ring_mask] += ring_color
-#     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-#
-#     if image_x_range is not None:
-#         density_image = density_image[image_x_range[0]:image_x_range[1], image_y_range[0]:image_y_range[1]]
-#         extent = [xedges[image_x_range[0]], xedges[image_x_range[1]], yedges[image_y_range[0]],
-#                   yedges[image_y_range[1]]]
-#         binary_mask = binary_mask[image_x_range[0]:image_x_range[1], image_y_range[0]:image_y_range[1]]
-#
-#     # Set the colormap and vmin so 0 values appear as white
-#     cmap = plt.get_cmap('hsv', len(ring_masks))
-#     cmap.set_under('white')
-#     background_image = np.where(binary_mask, 0.5, 1.0)
-#
-#     fig, ax = plt.subplots(figsize=(8, 8))  # Create a figure with proper aspect ratio
-#     ax.imshow(background_image, extent=extent, origin='lower', cmap='gray', aspect='auto', vmin=0, vmax=1)
-#     img = ax.imshow(density_image, extent=extent, origin='lower', cmap=cmap, aspect='auto', vmin=0.01, alpha=0.6)
-#     ax.set_title('Transcripts Density Rings')
-#     ax.set_xlabel('x')
-#     ax.set_ylabel('y')
-#     ax.set_aspect('equal', adjustable='box')
-#
-#     # Add the scale bar under the image
-#     scale_bar_length = 10  # Scale bar length in µm
-#     pixel_size = 107.11  # Size of one pixel in nm
-#
-#     # Convert scale bar length from µm to nm
-#     scale_bar_length_nm = scale_bar_length * 1000
-#
-#     # Calculate the scale bar length in pixels
-#     scale_bar_length_pixels = scale_bar_length_nm / pixel_size
-#
-#     # Position the scale bar in data coordinates
-#     scale_bar_start_x = xedges[0] + 0.05 * (xedges[-1] - xedges[0])  # Slightly inset from the left
-#     scale_bar_end_x = scale_bar_start_x + scale_bar_length_pixels * (xedges[-1] - xedges[0]) / density_image.shape[1]
-#     scale_bar_y = yedges[0] - 0.05 * (yedges[-1] - yedges[0])  # Below the image
-#
-#     ax.plot([scale_bar_start_x, scale_bar_end_x], [scale_bar_y, scale_bar_y],
-#             color='black', linewidth=3, solid_capstyle='butt')
-#
-#     # Add the scale bar label
-#     ax.text((scale_bar_start_x + scale_bar_end_x) / 2, scale_bar_y - 0.02 * (yedges[-1] - yedges[0]),
-#             f'{scale_bar_length} µm', color='black', fontsize=12, ha='center', va='top')
-#
-#     # Remove axis
-#     ax.axis('off')
-#
-#     # Save and show
-#     os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
-#     file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH,
-#                              'erosion_rings_zoom_in.pdf' if image_x_range else 'erosion_rings_full_monolayer.pdf')
-#     plt.savefig(file_name, format='pdf', bbox_inches='tight')
-#     plt.show()
-
-
-
-
 def compute_transcript_density_in_rings(gene_name, binary_mask, erosion_step, num_iterations, data, xedges, yedges,
                                         plot_rings=True):
     """
@@ -449,10 +423,9 @@ def compute_transcript_density_in_rings(gene_name, binary_mask, erosion_step, nu
         # Update previous mask
         previous_mask = eroded_mask.copy()
 
-    with open(
-            r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\monolayer_ring_masks.pkl',
-            'wb') as f:
-        pickle.dump(ring_masks, f)
+    save_one_monolayer_masking_component_to_pickle(ring_masks,'monolayer_ring_masks')
+
+
     # Plot the rings with colors representing densities
     if plot_rings and ring_masks:
         # Create an array to hold the density values for each pixel
@@ -671,7 +644,14 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
 
         plt.show()
 
-def plot_wt_monolayer_gene_density_to_invivo_comparisons():
+def plot_unperturbed_monolayer_gene_density_to_invivo_comparisons():
+    """
+    This function compares expression profiles measured in the unpderturbed monolayer by measuring in eroded rings the
+    transcript densities in comparison to in vivo intestine expression measured in Moor. et al. 'Spatial Reconstruction
+    of Single Enterocytes Uncovers Broad Zonation along the Intestinal Villus Axis' 2018
+
+    The plot for each gene comparison is saved in the same directory
+    """
     result_dict = load_unperturbed_monolayer_gene_densities()
     invivo_exp_raw = load_TPM_LCM_intestine_atlas()
     invivo_exp,genes_LCM =  get_LCM_atlas_gene_subset(invivo_exp_raw, ORGANOID_GENE_NAMES)
@@ -686,17 +666,13 @@ def plot_wt_monolayer_gene_density_to_invivo_comparisons():
         print(f'{gene}, num {i}')
         plt.figure(figsize=(8, 8))
         plt.plot(x_gene_density, gene_density_df_normalized[gene], label='enteroid monolayer')
-        plt.plot(x_invivo, invivo_exp.loc[gene], label='invivo')
+        plt.plot(x_invivo, invivo_exp.loc[gene], label='in vivo villus')
         plt.legend()
         plt.xlabel('bottom to top villus axis')
         plt.ylabel('expression')
         plt.title(f'{gene} invivo to enteroid monolayer expression profile comparison')
-        plt.savefig(os.path.join(save_path, f'{gene}_invivo_monolayer_comparison.png'), dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(save_path, f'{gene}_invivo_monolayer_comparison.pdf'),bbox_inches='tight')
         #plt.show()
-
-def load_iteration_average_width():
-    iteration_widths = load_one_monolayer_masking_component_from_pickle('iteration_widths')
-    return np.mean(iteration_widths)
 
 def apply_savgol(column):
     return savgol_filter(column, window_length=15, polyorder=3)

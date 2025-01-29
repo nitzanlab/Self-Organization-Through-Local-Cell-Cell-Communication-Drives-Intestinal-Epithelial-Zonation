@@ -15,19 +15,19 @@ def plot_all_autonomous_figure_plots(saved_datasets=False):
     ###panel d: ##Todo:Yael
 
     ###panel e: bottom/(bottom+top) villus gene expression pattern
-    plot_gene_groups_expression_on_wt_monolayer(TOP_GENES, BOTTOM_GENES, 'top', 'bottom', zoned=True,
-                                                zone_x=ZONATION_EXAMPLE_ZONE_X, zone_y=ZONATION_EXAMPLE_ZONE_Y, save=False)
+    #plot_gene_groups_expression_on_wt_monolayer(TOP_GENES, BOTTOM_GENES, 'top', 'bottom', zoned=True,
+    #                                            zone_x=ZONATION_EXAMPLE_ZONE_X, zone_y=ZONATION_EXAMPLE_ZONE_Y, save=False)
 
     ###panel f: erosion rings
-    ###panel g: erosion expression profiles
+
     #if the erosion was already conducted, saved_datasets can be set to True, and thus plot from loaded data
     # from pickle, otherwise, calculate from scratch and save
-    # if saved_datasets:
-    #     plot_erosion_rings_from_saved_components()
-    #     result_dict = load_transcript_densities_unperturbed_monolayer()
-    # else:
-    #     result_dict = plot_erosion_rings()
-    #result_dict = load_transcript_densities_unperturbed_monolayer()
+    if saved_datasets:
+         plot_erosion_rings_from_saved_components()
+         result_dict = load_transcript_densities_unperturbed_monolayer()
+    else:
+         result_dict = calculate_eroded_transcription_densities(plot_erosion=True, save_components=True)
+    ###panel g: erosion expression profiles
     #plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True, normalize=True)
     #panel h: heatmap comparison in vivo reconstruction to monolayer, erosion measured expression from edge to interior
     #plot_wt_monolayer_gene_density_to_invivo_comparisons()
