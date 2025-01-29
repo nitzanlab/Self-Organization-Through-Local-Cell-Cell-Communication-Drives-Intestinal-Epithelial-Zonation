@@ -60,7 +60,7 @@ def map_monolayer_to_transcript_density_profiles(adata, genes, begin=3, end=14, 
     # sns.heatmap(transcript_df.T)
     # plt.title('transcript')
     # plt.show()
-    adata = adata[adata[:, genes].X.sum(axis=1) > 1e-1]
+    #adata = adata[adata[:, genes].X.sum(axis=1) > 1e-1]
     #adata_subset = adata[:, genes_in_monolayer].copy()
     adata_X = adata.X.copy()
 

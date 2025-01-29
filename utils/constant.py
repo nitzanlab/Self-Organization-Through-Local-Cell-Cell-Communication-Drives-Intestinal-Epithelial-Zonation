@@ -43,10 +43,28 @@ PIXEL2NM = 107.11
 
 AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','autonomous_zonation_figure_plots')
 CONTINUOUS_REGENERATIVE_RESPONSE_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','continuous_regenerative_figure_plots')
-
-
+ZONATION_PLASTICITY_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','zonation_plasticity_plots')
+NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','neighborhood_zone_adoption_plots')
 MID_X_RANGE = [9219, 17780]
 MID_Y_RANGE = [14269, 20986]
+
+
+ZONATION_EXAMPLE_ZONE_X = [10000,17000]
+ZONATION_EXAMPLE_ZONE_Y = [14000,21000]
+TOP_GENES = ['Ada','Apoa4','Apoa1']
+BOTTOM_GENES = ['Sis','Alpi']
+
+COORDINATES = 'spatial'
+X_COORDINATES = 'center_x'
+Y_COORDINATES = 'center_y'
+
+
+GFP_12HR_ROI1_X = [18000, 22000]
+GFP_12HR_ROI1_Y = [22000, 26000]
+
+
+GFP_72HR_ROI2_X = [4500, 8000]
+GFP_72HR_ROI2_Y = [22000, 28000]
 
 CELL_TYPE_ANNOT_ORDER = ['regenerative', 'enterocyte','EEC','goblet_cells','stem_cells','paneth_cells','Tuft_cells']
 ALL_CELL_TYPES_PLOT_ORDER =['EEC','Tuft_cells','paneth_cells','goblet_cells','stem_cells','enterocyte','regenerative']

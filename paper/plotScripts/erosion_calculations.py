@@ -3,8 +3,8 @@ from utils.imports import *
 def plot_erosion_rings():
     data = load_unperturbed_monolayer_transcripts()
     xedges, yedges, binary_mask_cleaned, extent = compute_unperturbed_monolayer_spatial_mask(save_to_pickle=True)
-    plot_binary_mask_cleaned(binary_mask_cleaned, extent)
-    check_mask_fidelity(data, binary_mask_cleaned, extent)
+    #plot_binary_mask_cleaned(binary_mask_cleaned, extent)
+    #check_mask_fidelity(data, binary_mask_cleaned, extent)
     ring_masks, avg_ring_width = calculate_ring_masks(binary_mask_cleaned, xedges, yedges, num_iterations=NUM_ITERATIONS, plot_rings=False, save_rings=False)
     # result_dict = compute_transcript_density_in_rings_all_genes(
     #     binary_mask=binary_mask_cleaned,
@@ -623,7 +623,7 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
                         else:
                             densities = [0] * len(densities)
                     iterations = np.arange(1, len(densities) + 1)
-                    ax.plot(iterations, densities, marker='o', label=gene_name)
+                    ax.plot(iterations, densities, marker='o', label=gene_name, linewidth=5)
                     ax.set_ylabel('Normalized Density' if normalize else 'Density', fontsize=20)
                     ax.grid(True)
                     if idx == 0:
