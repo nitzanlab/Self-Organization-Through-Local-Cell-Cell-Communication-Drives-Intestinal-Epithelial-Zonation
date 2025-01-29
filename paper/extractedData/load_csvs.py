@@ -39,6 +39,9 @@ def get_unperturbed_monolayer_adata(num_neigh=5):
     adata.obsm['neighbors_idx'] = np.array(neigh_idxs[:, 1:])
     return adata
 
+def load_unperturbed_monolayer_genes_morans_i():
+    morans_i_unperturbed_df = pd.read_csv(os.path.join(WT_MONOLAYER_DIR, 'morans_i_wt_monolayer.csv'), index_col=0)
+    return morans_i_unperturbed_df
 def load_unperturbed_monolayer_transcripts():
     data = pd.read_csv(os.path.join(WT_MONOLAYER_DIR,'transcrips_20240925.csv'))
     return data

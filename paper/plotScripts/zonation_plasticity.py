@@ -2,37 +2,56 @@
 from utils.imports import *
 from utils.constant import *
 from paper.extractedData.load_csvs import *
-def plot_zonation_plasticity_plots():
+def plot_zonation_plasticity_plots(calculate = True):
+    ###necessary calculations needed to perform, and save for analyses and plots
+    if calculate:
+        calculate_unperturbed_monolayer_neighborhood_gene_expression_correlations(save=True)
+        calculate_unperturbed_monolayer_morans_i(save=True)
+
     ###panel a: schematic diagram created in BioRender.com
     ###panel b and c: raw image example #TODO Yael
     ###panel d and e : ### correlation comparison #TODO Yael
 
     ###panel f: gene expression neighborhood correlation in inserted cells
     #plot_gene_expression_neighborhood_correlation_in_inserted_cells()
-    plot_gene_correlation_histograms_GFP_to_wt()
+    plot_gene_correlation_histograms_GFP_to_wt(len(ORGANOID_GENE_NAMES_NOGFP))
+    plot_gene_correlation_histograms_GFP_to_wt(20)
 
     ###panel g: inserted cell neighborhood correlation across timepoints  #TODO Yael
 
+
+def calculate_unperturbed_monolayer_morans_i(save=True):
     pass
 
-def plot_gene_correlation_histograms_GFP_to_wt():
-    morans_i_wt = pd.read_csv(os.path.join(WT_MONOLAYER_DIR, 'morans_i_wt_monolayer.csv'), index_col=0)
-    num_top_moran_genes = len(morans_i_wt) #20
-    top_20_moran_i_genes = np.array(morans_i_wt.sort_values(by='morans_i', ascending=False).head(num_top_moran_genes).index)
-    #get top 20 morani genes index in ORGANOID_GENE_NAMES_NO_GFP
-    moran_i_genes_idx = [np.where(ORGANOID_GENE_NAMES_NOGFP == item)[0][0] for item in top_20_moran_i_genes]
-    #indices = [ORGANOID_GENE_NAMES_NOGFP.index(item) for item in top_20_moran_i_genes]
+def calculate_unperturbed_monolayer_neighborhood_gene_expression_correlations(save=True):
+    pass
+
+def plot_gene_correlation_histograms_GFP_to_wt(num_genes):
+    """
+    This function plots the distribution of correlation in gene expression between a cell and its neighboring cells in the following
+    three settings. 1) in the unperturbed monolayer 2) between inserted cells for 12hr and their non inserted neighboring cells , averaged across all rois,
+    3) like 2) but for cells that have been inserted for 72hr hours at time of measuring expression
+    :param num_genes: the top n genes in regards to the gene's moran's I value in the unperturbed monolayer
+    :return:
+    """
+    morans_i_wt = load_unperturbed_monolayer_genes_morans_i()
+    #get the name of then genes with the highest moran's I in the unperturbed monolayer
+    top_n_moran_i_genes = np.array(morans_i_wt.sort_values(by='morans_i', ascending=False).head(num_genes).index)
+    # get top n morans i genes index in from all non GFP gnes : ORGANOID_GENE_NAMES_NO_GFP
+    moran_i_genes_idx = [np.where(ORGANOID_GENE_NAMES_NOGFP == item)[0][0] for item in top_n_moran_i_genes]
+    #load unperturbed monoalyer gene expression correlations:
     wt_non_GFP_gene_corr = pd.read_csv(os.path.join(WT_MONOLAYER_DIR, 'wt_gene_correlation.csv'), index_col=0)
     wt_non_GFP_gene_corr = wt_non_GFP_gene_corr.reindex(ORGANOID_GENE_NAMES_NOGFP)
-    wt_non_GFP_gene_corr = wt_non_GFP_gene_corr['corr'].loc[top_20_moran_i_genes]
+    wt_non_GFP_gene_corr = wt_non_GFP_gene_corr['corr'].loc[top_n_moran_i_genes]
+
+    #get correlation in expression between inserted cells and their neighboring cells in each time point
     GFP_72hr_gene_corr = get_all_GFP_to_env_one_tmpt_gene_exp_corr('72hr').iloc[moran_i_genes_idx]
     GFP_12hr_gene_corr = get_all_GFP_to_env_one_tmpt_gene_exp_corr('12hr').iloc[moran_i_genes_idx]
 
-    bins = np.linspace(-0.25,0.8,20)
+    bins = np.linspace(-0.25, 0.8, 20)
     plt.hist(wt_non_GFP_gene_corr, bins=bins, color='purple', alpha=0.8)
     plt.hist(GFP_72hr_gene_corr, bins=bins, color='orange', alpha=0.8)
-    plt.hist(GFP_12hr_gene_corr, bins=bins, color='green',alpha=0.8)
-
+    plt.hist(GFP_12hr_gene_corr, bins=bins, color='green', alpha=0.8)
 
     plt.axvline(np.mean(GFP_72hr_gene_corr), label='mean inserted 72hr ', color='orange', linestyle='--', linewidth=2)
     plt.axvline(np.mean(GFP_12hr_gene_corr), label='mean inserted 12hr', color='green', linestyle='--', linewidth=2)
@@ -43,12 +62,17 @@ def plot_gene_correlation_histograms_GFP_to_wt():
     plt.title(f'Neighboring Cells Gene Expression Correlation')
     plt.tight_layout()
     os.makedirs(ZONATION_PLASTICITY_PLOTS_FOLDER_PATH, exist_ok=True)
-    file_name = os.path.join(ZONATION_PLASTICITY_PLOTS_FOLDER_PATH, 'neighborhood_expression_correlations_all_genes.pdf')
+    file_name = os.path.join(ZONATION_PLASTICITY_PLOTS_FOLDER_PATH,
+                             'neighborhood_expression_correlations_all_genes.pdf')
     plt.savefig(file_name, format='pdf')
     plt.show()
 
 def get_all_GFP_to_env_one_tmpt_gene_exp_corr(tmpt):
-    #gene_corrs = {f'{roi}':[] for roi in TMPT_TO_ROIS_DICT[tmpt]}
+    """
+    This function measures the correlation in expression between inserted cells and their non-inserted neighboring cells per gene, averaged across
+    the rois
+    :param tmpt: the timepoint - the amount fo hours the cells were inserted for before measuring gene expression
+    """
     gene_corrs = {}
     for roi in TMPT_TO_ROIS_DICT[tmpt]:
         gene_corrs[roi] = get_GFP_to_env_gene_exp_corr_one_roi(tmpt, roi)
@@ -57,6 +81,14 @@ def get_all_GFP_to_env_one_tmpt_gene_exp_corr(tmpt):
 
 
 def get_GFP_to_env_gene_exp_corr_one_roi(tmpt, roi, radius=500):
+    """
+    This funcion measures the correlation in expression between inserted cells and their non-inserted neighboring cells per gene
+    in one roi.
+    :param tmpt: he timepoint - the amount fo hours the cells were inserted for before measuring gene expression
+    :param roi: the region of interest in the given timepoint
+    :param radius: the radius used for finding the neighboring cells of the inserted cells
+    :return:
+    """
     all_gene_corrs =[]
     adata = load_sprinkled_adata_hr_tmpt(tmpt, roi)
     non_GFP_indices_cond = ~adata.obs['spc']  # Boolean mask for cells not of the excluded type
