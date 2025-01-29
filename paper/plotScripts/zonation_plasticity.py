@@ -35,10 +35,13 @@ def plot_gene_correlation_histograms_GFP_to_wt(num_genes):
     :return:
     """
     morans_i_wt = load_unperturbed_monolayer_genes_morans_i()
+
     #get the name of then genes with the highest moran's I in the unperturbed monolayer
     top_n_moran_i_genes = np.array(morans_i_wt.sort_values(by='morans_i', ascending=False).head(num_genes).index)
+
     # get top n morans i genes index in from all non GFP gnes : ORGANOID_GENE_NAMES_NO_GFP
     moran_i_genes_idx = [np.where(ORGANOID_GENE_NAMES_NOGFP == item)[0][0] for item in top_n_moran_i_genes]
+
     #load unperturbed monoalyer gene expression correlations:
     wt_non_GFP_gene_corr = pd.read_csv(os.path.join(WT_MONOLAYER_DIR, 'wt_gene_correlation.csv'), index_col=0)
     wt_non_GFP_gene_corr = wt_non_GFP_gene_corr.reindex(ORGANOID_GENE_NAMES_NOGFP)
@@ -82,7 +85,7 @@ def get_all_GFP_to_env_one_tmpt_gene_exp_corr(tmpt):
 
 def get_GFP_to_env_gene_exp_corr_one_roi(tmpt, roi, radius=500):
     """
-    This funcion measures the correlation in expression between inserted cells and their non-inserted neighboring cells per gene
+    This function measures the correlation in expression between inserted cells and their non-inserted neighboring cells per gene
     in one roi.
     :param tmpt: he timepoint - the amount fo hours the cells were inserted for before measuring gene expression
     :param roi: the region of interest in the given timepoint

@@ -1,3 +1,5 @@
+import pandas as pd
+
 from utils.imports import *
 from utils.constant import *
 from paper.extractedData.load_csvs import *
@@ -11,12 +13,12 @@ def plot_all_continuous_regenerative_response_plots():
     ###panel d: heatmap L metric in unperturbed data #TODO Yael
 
     ###panel e: regenerative expression in unperturbed monolayer
-    # plot_regenerative_expression_across_cell_types_spatially('Msln',color='Greys')
-    # plot_regenerative_expression_across_cell_types_spatially('Aldob',color='Purples')
+    plot_gene_expression_across_cell_types_spatially('Msln',color='Greys')
+    #plot_gene_expression_across_cell_types_spatially('Aldob', color='Purples')
 
     #plot_regenerative_expression_across_cell_types_spatially('Msln', x_region=UNPERTURBED_ZOOMED_IN_X_SEC_CELL_2, y_region=UNPERTURBED_ZOOMED_IN_Y_SEC_CELL_2)
-    for gene in ENTEROCYTE_GENES:
-        plot_regenerative_expression_across_cell_types_spatially(gene,color='Purples')
+    # for gene in ENTEROCYTE_GENES:
+    #     plot_regenerative_expression_across_cell_types_spatially(gene,color='Purples')
 
     #expression of secretory and progenitor genes
     # genes = ['Mki67'] #['Muc2','Chga','Dclk1','Lyz1','Mki67']
@@ -27,10 +29,10 @@ def plot_all_continuous_regenerative_response_plots():
 
 
     ###panel g: regenerative expression neighborhood correlation
-    #plot_regenerative_gene_expression_neighborhood_similarity(ALL_CELL_TYPE_GENES)
+    #calculate_regenerative_gene_expression_neighborhood_similarity(ALL_CELL_TYPE_GENES)
 
 
-def plot_regenerative_expression_across_cell_types_spatially(goi, x_region=UNPERTURBED_ZOOMED_IN_X,y_region=UNPERTURBED_ZOOMED_IN_Y,title='',color='Oranges'):
+def plot_gene_expression_across_cell_types_spatially(goi, x_region=UNPERTURBED_ZOOMED_IN_X, y_region=UNPERTURBED_ZOOMED_IN_Y, title='', color='Oranges'):
     cell_by_gene = load_unperturbed_intestinal_organoid_cell_by_gene_mat()
     cell_by_gene_normed = normalize_cell_by_gene_by_cells_then_genes(cell_by_gene, ORGANOID_GENE_NAMES_NOGFP)
     cell_coords = load_unperturbed_cell_coords()
@@ -87,59 +89,82 @@ def plot_regenerative_expression_across_cell_types_spatially(goi, x_region=UNPER
 
 
 
-def plot_regenerative_gene_expression_neighborhood_similarity(genes):
+def calculate_regenerative_gene_expression_neighborhood_similarity(genes:list)->pd.DataFrame:
+    """
+    This function calculates per each cell type, the correlation in expression between the cells of that type
+    and the mean expression of their neighboring cells per gene given in list genes
+    :param genes: the genes for which to calculate similarity in expression between each cell and the mean expression
+    of its neighboring cells
+    :return: a pd.Dataframe of shape num cell types X num genes, where each entry is the expression correlation of the specified gene
+    of the cells of that type with its neighboring cells
+    """
+    #load unperturbed monolayer
     adata = get_unperturbed_monolayer_adata()
+
     clusters_df = pd.read_csv(os.path.join(DATA_DIR, 'cell_by_gene_cluster_annotations.csv'))
     clusters = clusters_df.sort_values(by='object_id', ascending=True)['cluster_id']
     unique_clusters = np.unique(clusters)
 
     cell_type_corrs = {}
-    for cell_type_cluster in unique_clusters[:-1]:
+    for cell_type_cluster in unique_clusters[:-1]: #for each cell type cluster, get the correlation in the mean expression of each gene in genes of the neighboring cells to the cell
         all_genes_one_type = []
-        cell_indices = np.where(clusters == cell_type_cluster)[0]
-        cell_neighbors_idx = adata.obsm['neighbors_idx'][cell_indices]
+        cell_indices = np.where(clusters == cell_type_cluster)[0]  #gets the indices of all of the cells in the cell_type_cluster
+        cell_neighbors_idx = adata.obsm['neighbors_idx'][cell_indices] ##the indices of the cells neighboring the cell type cells
         for gene in genes:
-            mean_neigh_exp = adata[:,gene].X[cell_neighbors_idx].mean(axis=1).flatten()
+            mean_neigh_exp = adata[:,gene].X[cell_neighbors_idx].mean(axis=1).flatten() #mean expresssion over the neighboring cells of the given gene
             corr = np.corrcoef(adata[:,gene].X[cell_indices].flatten(), mean_neigh_exp)[0, 1]
             all_genes_one_type.append(corr)
         cell_type_corrs[UNPERTURBED_CELL_TYPE_CLUSTERS[cell_type_cluster]] = np.array(all_genes_one_type)
-    all_cell_types_corrs = pd.DataFrame(cell_type_corrs, index=genes).T
+    all_cell_types_corrs = pd.DataFrame(cell_type_corrs, index=genes).T #pd dataframe num cell types X num genes
     all_cell_types_corrs.fillna(0, inplace=True)
-    print(all_cell_types_corrs.columns)
-    genes_enterocyte = ['Ada', 'Apoa4','Apoa1','Alpi','Sis','Aldob']
-    genes_reg = ['Clu','Msln','Ahnak']
 
+    plot_regenerative_neighboring_expression_correlation(all_cell_types_corrs)
+    return all_cell_types_corrs
+
+def plot_regenerative_neighboring_expression_correlation(all_cell_types_corrs):
+    """
+    This function plots the correlation in expression between enterocyte cells and secretory cells with their
+    neighboring cells of enterocyte genes and regenerative genes
+    :param all_cell_types_corrs: a pd.Dataframe of shape num cell types X num genes, where each entry is the expression correlation of the specified gene
+    of the cells of that type with its neighboring cells
+    """
+    genes_enterocyte = ['Ada', 'Apoa4', 'Apoa1', 'Alpi', 'Sis', 'Aldob']
+    genes_reg = ['Clu', 'Msln', 'Ahnak']
     data = [all_cell_types_corrs.loc['secretory'][genes_enterocyte], all_cell_types_corrs.loc['enterocyte'][genes_enterocyte],
             all_cell_types_corrs.loc['secretory'][genes_reg],
             all_cell_types_corrs.loc['enterocyte'][genes_reg]]
-    group_titles = ['entercoyte gene correlation', 'regenerative gene correlation']
-    bar_titles = ['secretory cells','enterocyte cells']
+
+
+    group_titles = ['Enterocyte \nGenes Expression \nCorrelation', 'Regenerative\n Gene Expression\n Correlation']
+    bar_titles = ['Secretory\n Cells','Enterocyte\n Cells']
     means = [np.mean(lst) for lst in data]
     stds = [np.std(lst) for lst in data]
 
     # Group data for plotting
     groups = [0, 0, 1, 1]  # 0 for Group 1, 1 for Group 2
-    bar_positions = np.arange(len(data))  # Bar positions
+    bar_positions = np.arange(len(data))/2  # Bar positions
     width = 0.35  # Width of each bar
 
     # Create the bar plot
-    fig, ax = plt.subplots(figsize=(6,4))
+    fig, ax = plt.subplots(figsize=(4,3))
 
     bars = ax.bar(bar_positions, means, yerr=stds, capsize=5, width=width, color=['skyblue', 'lightgreen'])
 
     # Add bar titles
+    label_size = plt.rcParams['axes.labelsize']
     for i, bar in enumerate(bars):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.05,
-                f'{bar_titles[i % 2]}', ha='center', va='bottom', fontsize=10)
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + stds[i]+0.01,
+                f'{bar_titles[i % 2]}', ha='center', va='bottom', fontsize=label_size)
 
     # Add group titles
     group_ticks = [(bar_positions[groups == g].mean()) for g in np.unique(groups)]
     ax.set_xticks(group_ticks)
-    ax.set_xticklabels(group_titles,fontsize=10)
-
-    ax.set_ylabel('Mean Correlation',fontsize=10)
+    ax.set_xticklabels(group_titles, fontweight='bold')
+    ax.set_ylim(0,0.9)
+    ax.set_ylabel('Mean Correlation')
     ax.set_title('Mean Expression Correlations to Neighboring cells')
     plt.tight_layout()
+    os.makedirs(CONTINUOUS_REGENERATIVE_RESPONSE_PLOTS_FOLDER_PATH, exist_ok=True)
+    file_name = os.path.join(CONTINUOUS_REGENERATIVE_RESPONSE_PLOTS_FOLDER_PATH, f'regenerative_expression_across_cell_types.pdf')
+    plt.savefig(file_name, format='pdf')
     plt.show()
-
-    return all_cell_types_corrs

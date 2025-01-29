@@ -10,5 +10,5 @@ if __name__ == '__main__':
    #plot_erosion_rings()
    #plot_erosion_rings_from_saved_components()
    #plot_all_autonomous_figure_plots()
-   plot_zonation_plasticity_plots(calculate=False)
-   #plot_all_continuous_regenerative_response_plots()
+   #plot_zonation_plasticity_plots(calculate=False)
+   plot_all_continuous_regenerative_response_plots()

@@ -58,6 +58,7 @@ BOTTOM_GENES = ['Sis','Alpi']
 COORDINATES = 'spatial'
 X_COORDINATES = 'center_x'
 Y_COORDINATES = 'center_y'
+EXPECTED_ZONE_TB = 'transcript_exp_pos' #the expected zone of the cell along the transcript profile axis
 
 
 GFP_12HR_ROI1_X = [18000, 22000]

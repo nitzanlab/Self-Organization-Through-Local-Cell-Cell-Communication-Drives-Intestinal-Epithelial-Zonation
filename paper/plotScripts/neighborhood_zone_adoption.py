@@ -5,12 +5,6 @@ from utils.imports import *
 from utils.constant import *
 from paper.extractedData.load_csvs import *
 
-
-"""
- signal_df['x'] = adata.obsm['spatial']['center_x']
-    signal_df['y'] = adata.obsm['spatial']['center_y']
-    signal_df['signal'] = gene_exp
-    signal_df.to_csv(os.path.join(WT_MONOLAYER_DIR, 'top_bottom_villus_exp.csv'))"""
 def plot_all_neighborhood_zone_adoption_plots():
     ###panel a: schematic diagram created in  https://BioRender.com
     ###panel b: expected cell zones in unperturbed monolayer
@@ -20,7 +14,7 @@ def plot_all_neighborhood_zone_adoption_plots():
     #plot_inserted_cells_expected_zones_spatially()
 
     ###panel d: correlation in expected zone to neighbors
-    #plot_expected_zone_correlations(ORGANOID_GENE_NAMES_NOGFP, num_neigh=5)
+    plot_expected_zone_correlations(ORGANOID_GENE_NAMES_NOGFP, num_neigh=5)
 
     #plot_expected_zone_correlations(ZONE_MAPPING_GENES, num_neigh=5)
 
@@ -32,79 +26,75 @@ def plot_all_neighborhood_zone_adoption_plots():
     # plot_inserted_cells_zone_confusion('72hr')
 
     ###panel g: gene contribution to zone confusion
-    gene_confusion_contribution('72hr', ZONE_MAPPING_GENES, 3, 14, is_sprinkled=True)
-    gene_confusion_contribution('12hr', ZONE_MAPPING_GENES, 3, 14, is_sprinkled=True)
+    # gene_confusion_contribution('72hr', ZONE_MAPPING_GENES, 3, 14, is_sprinkled=True)
+    # gene_confusion_contribution('12hr', ZONE_MAPPING_GENES, 3, 14, is_sprinkled=True)
 
 
 
 def plot_expected_cell_zones():
-    smooth_exp_genes = get_invivo_smooth_exp(ORGANOID_GENE_NAMES_NOGFP).index
-    plot_expected_position_mapping_unperturbed_cosine_sim(smooth_exp_genes, 'smooth exp genes', to_plot=True, to_save=False)
+    """
+    This function plots the cell in the unperturbed monolayer based on their expected zone -
+    based on how they match the zones measured by eroding the monolayer from its edge inwards.
+    """
+    plot_expected_position_mapping_unperturbed_cosine_sim(ZONE_MAPPING_GENES, 'zone mapping genes', to_plot=True,
+                                                          to_save=False)
 
-
-
-def map_monolayer_to_invivo_expression_profiles(adata, genes):
-    invivo_expression = load_TPM_LCM_intestine_atlas()
-    invivo_exp_profile, gene_exp_list = preprocess_LCM_atlas_only_core_reference_genes(invivo_expression, genes)
-    genes_paneled_from_gene_list = [gene for gene in gene_exp_list if gene in adata.var_names]
-    adata_subset = adata[:, genes_paneled_from_gene_list].copy()
-    cosine_sim_per_position = cosine_similarity(adata_subset.X, invivo_exp_profile.T)
-    row_sums = np.sum(cosine_sim_per_position, axis=1)
-    zero_sum_rows = (row_sums==0)
-    cosine_sim_per_position[~zero_sum_rows] = cosine_sim_per_position[~zero_sum_rows] / row_sums[~zero_sum_rows, np.newaxis]
-    cosine_sim_per_position[zero_sum_rows] = 1/cosine_sim_per_position.shape[1]
-    max_pos = np.argmax(cosine_sim_per_position, axis=1)
-    adata.obs['invivo_max_pos'] = max_pos
-    adata.obs['invivo_exp_pos'] = cosine_sim_per_position @ np.arange(
-        cosine_sim_per_position.shape[1])
-    adata.obsm['invivo_position_dist'] = cosine_sim_per_position
-    #adata.obs['invivo_position_dist_std'] = np.std(adata.obsm['invivo_position_dist'], axis=1)
-    return adata
 
 def plot_expected_position_mapping_unperturbed_cosine_sim(genes, gene_title='',zoned=False, x_range=None, y_range=None, to_plot=True, to_save=False, save_name=''):
+    """
+    This function measures the expected zone of the cells in  the unperturbed monolayer and plots the cells spatially,
+    colored based on their expected zone.
+    to the transcript density profiles measured.
+    :param genes:  Genes used for mapping
+    :param gene_title: the name of the gene group
+    :param zoned: if the plot is of a subregion of the monolayer
+    :param x_range: if zoned, then the region plotted will be cells in the given x range
+    :param y_range: if zoned, then the region plotted will be cells in the given y range
+    :param to_plot: if to plot the expected zone of the cells spatially
+    :param to_save: if to save the cells with their expected zones and x,y coordinates as a pandas dataframe
+    :param save_name:  name of the dataframe
+    """
+
+    #load the unperturbed monolayer
     adata = get_unperturbed_monolayer_adata()
-    #adata = map_monolayer_to_invivo_expression_profiles(adata, ZONE_MAPPING_GENES)
-    adata = map_monolayer_to_transcript_density_profiles(adata,ZONE_MAPPING_GENES)
+
+    #map the cells in the unperturbed monolayer to the transcript density profiles based on the given genes
+    adata = map_monolayer_to_transcript_density_profiles(adata, genes)
     s=6
-    if zoned:
-        aoi = (adata.obsm['spatial']['center_x'] > x_range[0]) & (
-                adata.obsm['spatial']['center_x'] < x_range[1]) & (
-                          adata.obsm['spatial']['center_y'] > y_range[0]) & (
-                          adata.obsm['spatial']['center_y'] < y_range[1])
+
+    if zoned: #subset of cells that are in the given zone
+        aoi = (adata.obsm[COORDINATES][X_COORDINATES] > x_range[0]) & (
+                adata.obsm[COORDINATES][X_COORDINATES] < x_range[1]) & (
+                          adata.obsm[COORDINATES][Y_COORDINATES] > y_range[0]) & (
+                          adata.obsm[COORDINATES][Y_COORDINATES] < y_range[1])
 
         adata = adata[aoi]
         s=10
 
-    vmin = adata.obs['transcript_exp_pos'].min()
-    vmax = adata.obs['transcript_exp_pos'].max()
-    sc1 = plt.scatter(adata.obsm['spatial']['center_x'], -adata.obsm['spatial']['center_y'], cmap='viridis',
-                      c=adata.obs['transcript_exp_pos'], vmin=vmin, vmax=vmax, s=s)
-
-
-    cbar = plt.colorbar(sc1, label='expected position')
-    plt.title(f'unperturbed monolayer {gene_title}\n in vivo expression-based zone mapping ')
+    vmin = adata.obs[EXPECTED_ZONE_TB].min()
+    vmax = adata.obs[EXPECTED_ZONE_TB].max()
+    sc1 = plt.scatter(adata.obsm[COORDINATES][X_COORDINATES], -adata.obsm[COORDINATES][Y_COORDINATES], cmap='viridis',
+                      c=adata.obs[EXPECTED_ZONE_TB], vmin=vmin, vmax=vmax, s=s)
+    cbar = plt.colorbar(sc1, label='Expected Zone')
+    plt.title(f'Unperturbed Monolayer {gene_title}\n Transcript-Based Zone Mapping ')
     plt.xticks([])
     plt.yticks([])
     if to_plot:
         plt.show()
     if to_save:
-        # sprinkled_zonation_dir = os.path.join(WT_MONOLAYER_DIR, 'sprinkled_zonation')
-        # zonation_dir = os.path.join(sprinkled_zonation_dir, f'unperturbed_{save_name}')
-        # os.makedirs(zonation_dir, exist_ok=True)
-        # save_path = os.path.join(zonation_dir, f"zones_plot.pdf")
-        # plt.savefig(save_path)
-        signal_df = pd.DataFrame(adata.X, columns=adata.var_names)
-        signal_df['x'] = adata.obsm['spatial']['center_x']
-        signal_df['y'] = adata.obsm['spatial']['center_y']
-        signal_df['signal'] = adata.obs['transcript_exp_pos']
-        signal_df.to_csv(os.path.join(WT_MONOLAYER_DIR, 'expected_zones_unperturbed_monolayer.csv'))
+        save_spatial_signal(adata, EXPECTED_ZONE_TB, f'{gene_title}_expected_zones_unperturbed_monolayer')
 
 
 def plot_inserted_cells_expected_zones_spatially():
-    # adata_GFP_12hr_roi1 = get_adata_with_zonation_GFP_monolayer('12hr', 'roi1', ZONE_MAPPING_GENES)
-    # adata_GFP_12hr_roi1 = map_monolayer_to_transcript_density_profiles(adata_GFP_12hr_roi1, ZONE_MAPPING_GENES)
-    # plot_GFP_adata_signal_spatially(adata_GFP_12hr_roi1, 'transcript_exp_pos', '12hr roi1 GFP', zoned=True, x_range=GFP_12HR_ROI1_X,
-    #                                 y_range=GFP_12HR_ROI1_Y, title='12hr_roi1_GFP_expected_zone')
+    """
+    This function plots the panels showcasing the expected zones of inserted cells in comparison to their
+    neighboring non inserted cells' expected zones. We show an example of a subregion of the monolayer measured 12 hours following
+    cell insertion and another example of the monolayer measured 72 hours following cell insertion
+    """
+    adata_GFP_12hr_roi1 = get_adata_with_zonation_GFP_monolayer('12hr', 'roi1', ZONE_MAPPING_GENES)
+    adata_GFP_12hr_roi1 = map_monolayer_to_transcript_density_profiles(adata_GFP_12hr_roi1, ZONE_MAPPING_GENES)
+    plot_GFP_adata_signal_spatially(adata_GFP_12hr_roi1, 'transcript_exp_pos', '12hr roi1 GFP', zoned=True, x_range=GFP_12HR_ROI1_X,
+                                    y_range=GFP_12HR_ROI1_Y, title='12hr_roi1_GFP_expected_zone')
 
     adata_GFP_72hr_roi2 = get_adata_with_zonation_GFP_monolayer('72hr', 'roi2', ZONE_MAPPING_GENES)
     adata_GFP_72hr_roi2 = map_monolayer_to_transcript_density_profiles(adata_GFP_72hr_roi2, ZONE_MAPPING_GENES)
@@ -116,6 +106,12 @@ def plot_inserted_cells_expected_zones_spatially():
 
 
 def plot_expected_zone_correlations(genes, num_neigh):
+    """
+
+    :param genes:
+    :param num_neigh:
+    :return:
+    """
     #plot_all_expected_position_by_transcript_corr_with_GFP_neighbors(genes):
     wt_env_zone_corr = get_env_transcript_density_zonation_correlation_in_wt_monolayer(genes, num_neigh)
     corrs_GFP = {'72hr': [], '12hr': []}
@@ -377,13 +373,7 @@ def plot_GFP_adata_signal_spatially(adata, signal_name, adata_type, zoned=False,
                           adata.obsm['spatial']['center_y'] > y_range[0]) & (
                           adata.obsm['spatial']['center_y'] < y_range[1])
         adata = adata[aoi]
-        signal_df = pd.DataFrame(adata.X, columns=adata.var_names)
-        signal_df['x'] = adata.obsm['spatial']['center_x']
-        signal_df['y'] = adata.obsm['spatial']['center_y']
-        signal_df['signal'] = adata.obs[signal_name]
-        signal_df.to_csv(os.path.join(WT_MONOLAYER_DIR, f'zoom_in_{title}.csv'))
-
-
+        save_spatial_signal(adata, signal_name, f'zoom_in_{title}')
 
 
     vmin = min(adata_spc.obs[signal_name].min(), adata_non_spc.obs[signal_name].min())
@@ -430,3 +420,30 @@ def gene_confusion_contribution(tmpt, genes,begin, end, is_sprinkled= True):
     #     plt.show()
     plot_confusion_contribution_cell_groups(adata, genes, transcript_df, 2, title=full_title)
 
+
+##mapping based on the in vivo expression profiles
+def map_monolayer_to_invivo_expression_profiles(adata, genes):
+    """
+    This function maps the cell in the monolayer probabilistically to zones defined by the in vivo villus data collected
+    in Moor et al 2018 Cell , 'Spatial Reconstruction of Single Enterocytes Uncovers Broad Zonation along the Intestinal
+    Villus axis
+    :param adata: anndata of the monolayer to be mapped
+    :param genes: the genes used for mapping the cells to zones
+    :return:
+    """
+    invivo_expression = load_TPM_LCM_intestine_atlas()
+    invivo_exp_profile, gene_exp_list = preprocess_LCM_atlas_only_core_reference_genes(invivo_expression, genes)
+    genes_paneled_from_gene_list = [gene for gene in gene_exp_list if gene in adata.var_names]
+    adata_subset = adata[:, genes_paneled_from_gene_list].copy()
+    cosine_sim_per_position = cosine_similarity(adata_subset.X, invivo_exp_profile.T)
+    row_sums = np.sum(cosine_sim_per_position, axis=1)
+    zero_sum_rows = (row_sums==0)
+    cosine_sim_per_position[~zero_sum_rows] = cosine_sim_per_position[~zero_sum_rows] / row_sums[~zero_sum_rows, np.newaxis]
+    cosine_sim_per_position[zero_sum_rows] = 1/cosine_sim_per_position.shape[1]
+    max_pos = np.argmax(cosine_sim_per_position, axis=1)
+    adata.obs['invivo_max_pos'] = max_pos
+    adata.obs['invivo_exp_pos'] = cosine_sim_per_position @ np.arange(
+        cosine_sim_per_position.shape[1])
+    adata.obsm['invivo_position_dist'] = cosine_sim_per_position
+    #adata.obs['invivo_position_dist_std'] = np.std(adata.obsm['invivo_position_dist'], axis=1)
+    return adata

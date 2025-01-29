@@ -50,12 +50,8 @@ def plot_gene_groups_expression_on_wt_monolayer(gene_group1:list, gene_group2:li
                 adata[:, gene_group1].X.mean(axis=1) + adata[:, gene_group2].X.mean(axis=1))\
 
     #save spatial signal as a pandas dataframe
-    signal_df = pd.DataFrame(adata.X, columns=adata.var.index,  index=adata.obs_names)
-
-    signal_df['x'] = adata.obsm[COORDINATES][X_COORDINATES]
-    signal_df['y'] = adata.obsm[COORDINATES][Y_COORDINATES]
-    signal_df['signal'] = gene_exp
-    signal_df.to_csv(os.path.join(WT_MONOLAYER_DIR, f'{gene_group1}_{gene_group2}_spatial_expression.csv'))
+    adata.obs['relative_exp'] = gene_exp
+    save_spatial_signal(adata, 'relative_exp', f'{gene_group1}_{gene_group2}_spatial_expression')
 
     sctr1 = plt.scatter(adata.obsm[COORDINATES][X_COORDINATES], adata.obsm[COORDINATES][Y_COORDINATES],
                         c=gene_exp, s=40,  cmap='viridis')
@@ -123,7 +119,6 @@ def expression_profile_heatmap_comparison_invivo_gene_density(gene_set):
     plt.xticks(rotation=0)
     plt.ylabel('Genes')
     plt.yticks()
-    #plt.title(r"\textit{In Vivo} reconstruction")
     plt.title(r"$\it{In\ Vivo}$ Expression Profiles Reconstructed")
     plt.tight_layout()
     os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)

@@ -32,10 +32,10 @@ def get_unperturbed_monolayer_adata(num_neigh=5):
     sc.pp.normalize_total(adata)
     adata.var_names = cell_by_gene.columns
     cell_coords_reindexed = cell_coords.rename(index=dict(zip(cell_coords.index, adata.obs_names)))
-    adata.obsm['spatial'] = cell_coords_reindexed
+    adata.obsm[COORDINATES] = cell_coords_reindexed
     num_neighs_to_use = num_neigh + 1
-    nbrs = NearestNeighbors(n_neighbors=num_neighs_to_use, algorithm='auto').fit(adata.obsm['spatial'][['center_x','center_y']])
-    distances, neigh_idxs = nbrs.kneighbors(adata.obsm['spatial'][['center_x','center_y']])
+    nbrs = NearestNeighbors(n_neighbors=num_neighs_to_use, algorithm='auto').fit(adata.obsm[COORDINATES][[X_COORDINATES,Y_COORDINATES]])
+    distances, neigh_idxs = nbrs.kneighbors(adata.obsm[COORDINATES][[X_COORDINATES,Y_COORDINATES]])
     adata.obsm['neighbors_idx'] = np.array(neigh_idxs[:, 1:])
     return adata
 
@@ -250,3 +250,11 @@ def get_invivo_smooth_exp(gene_names):
     #sns.heatmap(invivo_smooth_exp, cmap='Reds')
     #plt.show()
     return invivo_smooth_exp
+
+
+def save_spatial_signal(adata, signal_name, save_name):
+    signal_df = pd.DataFrame(adata.X, columns=adata.var_names)
+    signal_df['x'] = adata.obsm[COORDINATES][X_COORDINATES]
+    signal_df['y'] = adata.obsm[COORDINATES][Y_COORDINATES]
+    signal_df['signal'] = adata.obs[signal_name]
+    signal_df.to_csv(os.path.join(WT_MONOLAYER_DIR, f'{save_name}.csv'))
