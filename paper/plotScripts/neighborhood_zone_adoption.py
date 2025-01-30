@@ -14,7 +14,7 @@ def plot_all_neighborhood_zone_adoption_plots():
     #plot_inserted_cells_expected_zones_spatially()
 
     ###panel d: correlation in expected zone to neighbors
-    #plot_expected_zone_correlations(ORGANOID_GENE_NAMES_NOGFP, num_neigh=5)
+    plot_expected_zone_correlations(ORGANOID_GENE_NAMES_NOGFP, num_neigh=5)
 
     #plot_expected_zone_correlations(ZONE_MAPPING_GENES, num_neigh=5)
 
@@ -22,18 +22,25 @@ def plot_all_neighborhood_zone_adoption_plots():
     #plot_inserted_cells_expected_zone_distribution()
 
     ###panel f: inserted cells zone confusion
-    # plot_inserted_cells_zone_confusion('12hr')
-    # plot_inserted_cells_zone_confusion('72hr')
+    plot_inserted_cells_zone_confusion_distribution('12hr')
+    plot_inserted_cells_zone_confusion_distribution('72hr')
 
     ###panel g: gene contribution to zone confusion
     plot_zone_confusion_gene_contribution('72hr', genes=ZONE_MAPPING_GENES)
 
 
 def plot_zone_confusion_gene_contribution(tmpt, genes=ZONE_MAPPING_GENES):
+    """
+    This function plots the contribution of each of the zone mapping genes to the zone probability of cells
+    in the same zone confusion range.
+    :param tmpt: the post insertion time when SEQfish was used to measure the gene expression of the monolayer.
+    :param genes: the genes used to map the cells to zones.
+    :return:
+    """
     all_confusion_heatmaps = []
     for entropy_range in ENTROPY_RANGES:
-        gene_contribution = plot_zone_dist_and_expression_with_similar_zone_entropy(tmpt, genes, 3, 14, True,
-                                                                entropy_range)
+        gene_contribution = calculate_gene_zone_confusion_contribution(tmpt, genes, 3, 14, True,
+                                                                       entropy_range)
         all_confusion_heatmaps.append(gene_contribution)
     vmin = min(d.min() for d in all_confusion_heatmaps)
     vmax = max(d.max() for d in all_confusion_heatmaps)
@@ -69,7 +76,19 @@ def plot_zone_confusion_gene_contribution(tmpt, genes=ZONE_MAPPING_GENES):
     plt.show()
 
 
-def plot_zone_dist_and_expression_with_similar_zone_entropy(tmpt, genes, begin, end, is_sprinkled, entropy_range, num_cells=10):
+def calculate_gene_zone_confusion_contribution(tmpt, genes, begin, end, is_sprinkled, entropy_range, num_cells=10):
+    """
+    This function calculates the gene confusion contribution given cells in the same zone confusion range.
+    This allows viewing the impact of different cells in determine cell zone
+    :param tmpt: time following insertion in which the gene expression across the monolayer was measured
+    :param genes: genes used for mapping cell zone
+    :param begin: erosion iteration from which expression profiles were measured
+    :param end: erosion iteration until which expression profiles were measured
+    :param is_sprinkled: if the cells for which we view the gene zone confusion contribution are inserted or not
+    :param entropy_range: the zone confusion range
+    :param num_cells: number of cells to present in the heatmap
+    :return: an array of shape num cells X genes showing how much each cell expresses each gene such in a way that
+    """
     adata = get_tmpt_all_rois_adata(tmpt)
     adata = adata[adata[:, ZONE_MAPPING_GENES].X.sum(axis=1) > 0.1]
     adata = map_monolayer_to_transcript_density_profiles(adata, genes, begin, end)
@@ -154,12 +173,12 @@ def plot_inserted_cells_expected_zones_spatially():
     neighboring non inserted cells' expected zones. We show an example of a subregion of the monolayer measured 12 hours following
     cell insertion and another example of the monolayer measured 72 hours following cell insertion
     """
-    adata_GFP_12hr_roi1 = get_adata_with_zonation_GFP_monolayer('12hr', 'roi1', ZONE_MAPPING_GENES)
+    adata_GFP_12hr_roi1 = load_sprinkled_adata_hr_tmpt('12hr', 'roi1', ZONE_MAPPING_GENES)
     adata_GFP_12hr_roi1 = map_monolayer_to_transcript_density_profiles(adata_GFP_12hr_roi1, ZONE_MAPPING_GENES)
     plot_GFP_adata_signal_spatially(adata_GFP_12hr_roi1, 'transcript_exp_pos', '12hr roi1 GFP', zoned=True, x_range=GFP_12HR_ROI1_X,
                                     y_range=GFP_12HR_ROI1_Y, title='12hr_roi1_GFP_expected_zone')
 
-    adata_GFP_72hr_roi2 = get_adata_with_zonation_GFP_monolayer('72hr', 'roi2', ZONE_MAPPING_GENES)
+    adata_GFP_72hr_roi2 = load_sprinkled_adata_hr_tmpt('72hr', 'roi2', ZONE_MAPPING_GENES)
     adata_GFP_72hr_roi2 = map_monolayer_to_transcript_density_profiles(adata_GFP_72hr_roi2, ZONE_MAPPING_GENES)
     plot_GFP_adata_signal_spatially(adata_GFP_72hr_roi2, 'transcript_exp_pos', '72hr roi2 GFP', zoned=True,
                                     x_range=GFP_72HR_ROI2_X,
@@ -170,10 +189,11 @@ def plot_inserted_cells_expected_zones_spatially():
 
 def plot_expected_zone_correlations(genes, num_neigh):
     """
-
-    :param genes:
-    :param num_neigh:
-    :return:
+    This function plots a bar plot showing the correlation in zone of each cell and the mean zone of its nearest neighbors.
+    Each bar shows the mean +- 1 stadnard deviation of the correlation for each cell group  - unperturbed monolayer
+    cells, inserted cells to their neighbors (for both timepoints), non-inserted cells to their neighbors (for both timepoints)
+    :param genes: genes used to calculate cell zones
+    :param num_neigh: number of neighbors takes into account for measuring the mean zone of the cell's neighbors
     """
     #plot_all_expected_position_by_transcript_corr_with_GFP_neighbors(genes):
     wt_env_zone_corr = get_env_transcript_density_zonation_correlation_in_wt_monolayer(genes, num_neigh)
@@ -246,10 +266,22 @@ def get_env_transcript_density_zonation_correlation_in_wt_monolayer(genes, num_n
     return correlation_in_exp_pos
 
 def plot_inserted_cells_expected_zone_distribution():
-    expected_zone_distribution('72hr',ZONE_MAPPING_GENES,3, 14)
-    expected_zone_distribution('12hr', ZONE_MAPPING_GENES, 3, 14)
+    """
+    This function plots the expected zone distribution as a histogram for each timepoitn
+    """
+    for tmpt in TMPT_TO_ROIS_DICT.keys():
+        expected_zone_distribution(tmpt, ZONE_MAPPING_GENES,3, 14)
 
 def expected_zone_distribution(tmpt, genes, begin, end):
+    """
+    This function plots the distirbution of the expected zones of the cells comparing non-inserted cells to inserted cells
+    in all of the regions of interest in the same monolayer
+    :param tmpt: time in hours following cell insertion
+    :param genes: genes used to map cells probabilistically to zones
+    :param begin: erosion step from which the transcript density profiles were used for mapping cell zone
+    :param end:  erosion step until which the transcipt density profiles were used for mapping cell zone
+    :return:
+    """
     adata = get_tmpt_all_rois_adata(tmpt)
     adata = map_monolayer_to_transcript_density_profiles(adata, genes, begin, end, binned=True)
     adata = get_transcript_density_position_std(adata)
@@ -263,18 +295,28 @@ def expected_zone_distribution(tmpt, genes, begin, end):
     print(f"KS Statistic: {stat}, p-value: {p_value}")
     plt.xlabel('Expected Zone')
     plt.ylabel('Relative Density')
+    plt.ylim(0,1.2)
     plt.legend(loc='upper left')
     plt.tight_layout()
     os.makedirs(NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH, exist_ok=True)
     file_name = os.path.join(NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH, f'expected_zone_distribution_{tmpt}.pdf')
-    plt.savefig(file_name, format='pdf')
+    plt.savefig(file_name, format='pdf',bbox_inches='tight')
     plt.show()
 
 def get_transcript_density_entropy(adata):
+    """
+    This function adds an obs to the anndata given, adata, of the zone confusion of each cell,
+    which is measured as the entropy of the zone probability distribution.
+    """
     zone_entropy = np.apply_along_axis(lambda x: entropy(x, base=2), axis=1, arr=adata.obsm['transcript_zone_dist'])
     adata.obs['zone_entropy'] = zone_entropy
     return adata
 def get_transcript_density_position_std(adata):
+    """
+
+    :param adata:
+    :return:
+    """
     exp_pos = np.array(adata.obs['transcript_exp_pos'])
     pos_dist = adata.obsm['transcript_zone_dist']
 
@@ -286,7 +328,11 @@ def get_transcript_density_position_std(adata):
     adata.obs['transcript_pos_std'] = pos_std
     return adata
 
-def plot_inserted_cells_zone_confusion(tmpt):
+def plot_inserted_cells_zone_confusion_distribution(tmpt):
+    """
+    This function plots the cell zone confusion distribution for all cells measured in the same monolayer, tmpt hours after
+    cell insertion. The histogram compares the zone confusion distribution of inserted cells vs. non inserted cells
+    """
     adata = get_tmpt_all_rois_adata(tmpt)
     adata = adata[adata[:, ZONE_MAPPING_GENES].X.sum(axis=1) > 0.1]
     adata = map_monolayer_to_transcript_density_profiles(adata, ZONE_MAPPING_GENES, 3, 14)
@@ -297,144 +343,53 @@ def plot_inserted_cells_zone_confusion(tmpt):
     bins = np.linspace(1.6, 2.6, 20)
     plt.hist(adata_non_gfp.obs['zone_entropy'], alpha=0.7, label='non GFP', density=True, color='grey', bins=bins)
     plt.hist(adata_gfp.obs['zone_entropy'], alpha=0.7, label='GFP', density=True, color='green', bins=bins)
-    plt.xlabel('zone entropy')
-    plt.ylabel('density')
+    plt.xlabel('Zone Entropy')
+    plt.ylabel('Density')
     plt.ylim(0, 6)
     plt.title(f'{tmpt} Zone Entropy')
     plt.legend(loc='upper left')
     os.makedirs(NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH, exist_ok=True)
     file_name = os.path.join(NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH, f'zone_confusion_distribution_{tmpt}.pdf')
-    plt.savefig(file_name, format='pdf')
+    plt.savefig(file_name, format='pdf', bbox_inches='tight')
+    plt.tight_layout()
     plt.show()
     stat, p_value = ks_2samp(adata_gfp.obs['transcript_exp_pos'], adata_non_gfp.obs['transcript_exp_pos'])
     print(f"KS Statistic: {stat}, p-value: {p_value} {tmpt}")
 
-
-
-
-def gene_confusion_contribution(tmpt, genes,begin, end, is_sprinkled= True):
-    #instead of mapping cells to positions using the transcript density profiles
-    #get transcript density:
-    transcript_df = get_transcript_density_profile_for_monolayer_mapping(begin, end, genes)
-    binned_df = transcript_df.groupby(np.arange(len(transcript_df)) // 2).mean()
-    transcript_df = (binned_df-binned_df.min())/(binned_df.max()-binned_df.min())
-    # sns.heatmap(transcript_df.T)
-    # plt.title('trasncript df')
-    # plt.show()
-    #get gene confusion contribution per cell
-    adata = load_sprinkled_adata_hr_tmpt(tmpt, 'roi2')
-
-    adata = map_monolayer_to_transcript_density_profiles(adata, genes, begin, end, binned=True)
-    adata = get_transcript_density_position_std(adata)
-    if is_sprinkled:
-        adata = adata[adata.obs['spc']]
-        title='GFP'
-    else:
-        adata = adata[~adata.obs['spc']]
-        title = 'non-GFP'
-    full_title = f'{title} {tmpt}'
-    bins = np.linspace(0,140,20)
-    # for gene in ZONE_MAPPING_GENES:
-    #     plt.hist(adata[:,gene].X, density=True, bins=bins)
-    #     plt.title(f'{gene} expression in {full_title}')
-    #     plt.ylim(0,0.15)
-    #     plt.show()
-    plot_confusion_contribution_cell_groups(adata, genes, transcript_df, 2, title=full_title)
-
-
-def plot_confusion_contribution_cell_groups(adata, genes, transcript_df, num_cells, title=''):
-    #plot examples of top and bottom cells
-    #can also do this per zone
-    obs_df = adata.obs['transcript_pos_std']
-    top_indices = adata.obs.nlargest(num_cells, 'transcript_pos_std').index
-    bottom_indices = adata.obs.nsmallest(num_cells, 'transcript_pos_std').index
-    low_pos_std_exp = []
-    for j, ind_top in enumerate(bottom_indices):
-        cell = adata[ind_top, genes]
-        dot_prod = np.multiply(cell.X, transcript_df)
-        norms = np.maximum(np.linalg.norm(cell.X) * np.linalg.norm(transcript_df, axis=1),
-                           np.ones(transcript_df.shape[0]))
-        cell_confusion_contribution = dot_prod / norms[:, np.newaxis]
-        sns.heatmap(expit(cell_confusion_contribution.T))
-        plt.title(f"{j} lowest pos std cell gene confusion contribution\n {title}\n {float(cell.obs['transcript_pos_std']):.2f}")
-        plt.tight_layout()
-        plt.show()
-    #     low_pos_std_exp.append(cell.X[0])
-    # low_pos_std_df = pd.DataFrame(np.array(low_pos_std_exp), columns=genes).T
-    # low_pos_std_df = (low_pos_std_df - low_pos_std_df.min()) / (low_pos_std_df.max()-low_pos_std_df.min())
-    # sns.heatmap(low_pos_std_df)
-    # plt.title(f'cell mapping gene expression, low pos std\n {title}')
-    # plt.show()
-
-    high_pos_std_exp = []
-    for i,ind in enumerate(top_indices):
-        cell = adata[ind, genes]
-        dot_prod = np.multiply(cell.X, transcript_df)
-        norms = np.maximum(np.linalg.norm(cell.X) * np.linalg.norm(transcript_df, axis=1),
-                           np.ones(transcript_df.shape[0]))
-        cell_confusion_contribution = dot_prod / norms[:, np.newaxis]
-        sns.heatmap(expit(cell_confusion_contribution.T))
-        plt.title(f"{i} highest pos std cell gene confusion contribution\n {title}\n {float(cell.obs['transcript_pos_std']):.2f}")
-        plt.tight_layout()
-        plt.show()
-        #high_pos_std_exp.append(cell.X[0])
-    # high_pos_std_exp_df = pd.DataFrame(np.array(high_pos_std_exp), columns=genes).T
-    # high_pos_std_exp_df = (high_pos_std_exp_df - high_pos_std_exp_df.min())/ high_pos_std_exp_df - high_pos_std_exp_df.min()
-    # sns.heatmap(high_pos_std_exp_df)
-    # plt.title(f'cell mapping gene expression, high pos std\n {title}')
-    # plt.show()
-
-def plot_pos_std_signal_spatially_all_monolayers(genes):
-    # adata_up = get_adata_with_zonation_signals_up(genes)
-    # plot_adata_signal_spatially(adata_up, 'pos_std', 'unperturbed')
-    for tmpt in ['12hr']:#TMPT_TO_ROIS_DICT:
-        for roi in ['roi1']:# TMPT_TO_ROIS_DICT[tmpt]:
-            adata_GFP = get_adata_with_zonation_GFP_monolayer(tmpt, roi, genes)
-            plot_GFP_adata_signal_spatially(adata_GFP, 'exp_pos', f'{tmpt} {roi} GFP',zoned=True, x_range=GFP_12HR_ROI1_X, y_range=GFP_12HR_ROI1_Y)
-
-
-
-def get_adata_with_zonation_GFP_monolayer(tmpt, roi, genes, num_neighs=5):
-    adata = load_sprinkled_adata_hr_tmpt(tmpt, roi, num_neighs)
-    #adata_exp_pos = map_monolayer_to_invivo_expression_profiles(adata, genes)
-    adata_pos_std = get_position_std(adata, genes)
-    return adata_pos_std
-
-def get_position_std(adata, genes):
-    adata = map_monolayer_to_invivo_expression_profiles(adata, genes)
-    exp_pos = np.array(adata.obs['invivo_exp_pos'])
-    pos_dist = adata.obsm['invivo_position_dist']
-
-    squared_diff = (np.tile(np.arange(pos_dist.shape[1]), (len(exp_pos),1)) - exp_pos[:, np.newaxis]) ** 2  # Shape: (n_samples, n_positions)
-    weighted_squared_diff = pos_dist * squared_diff
-    variance = np.sum(weighted_squared_diff, axis=1)
-    pos_std = np.sqrt(variance)
-    adata.obs['pos_std'] = pos_std
-    return adata
-
-
 def plot_GFP_adata_signal_spatially(adata, signal_name, adata_type, zoned=False, x_range=None, y_range=None, to_plot=True, title=''):
+    """
+    This function plots a signal over the cells spatially in monolayers with inserted cells, labeling the inserted
+    vs not inserted cells.
+    :param adata: the anndata containing the cell information
+    :param signal_name: the signal to be plotted spatially , which is saved in adata.obs
+    :param adata_type: the meta data of the adata - tmpt , roi,..
+    :param zoned: boolean: if to plot a subregion of the monolyaer
+    :param x_range: if plotting a subregion of the monolyaer, this is the x range of the plot
+    :param y_range: if plotting a subregion of the monolayer, this is the y range of the plot
+    :param to_plot: boolean: if to show the plot
+    :param title: the title of the plot
+    """
     adata_spc = adata[adata.obs['spc']]
     adata_non_spc = adata[~adata.obs['spc']]
     plt.figure(figsize=(8, 6))
     s = 30
     if zoned:
         plt.figure(figsize=(6, 4))
-        aoi_spc = (adata_spc.obsm['spatial']['center_x'] > x_range[0]) & (
-                adata_spc.obsm['spatial']['center_x'] < x_range[1]) & (
-                          adata_spc.obsm['spatial']['center_y'] > y_range[0]) & (
-                          adata_spc.obsm['spatial']['center_y'] < y_range[1])
-        aoi_non_spc = (adata_non_spc.obsm['spatial']['center_x'] > x_range[0]) & (
-                adata_non_spc.obsm['spatial']['center_x'] < x_range[1]) & (
-                          adata_non_spc.obsm['spatial']['center_y'] > y_range[0]) & (
-                          adata_non_spc.obsm['spatial']['center_y'] < y_range[1])
+        aoi_spc = (adata_spc.obsm[COORDINATES][X_COORDINATES] > x_range[0]) & (
+                adata_spc.obsm[COORDINATES][X_COORDINATES] < x_range[1]) & (
+                          adata_spc.obsm[COORDINATES][Y_COORDINATES] > y_range[0]) & (
+                          adata_spc.obsm[COORDINATES][Y_COORDINATES] < y_range[1])
+        aoi_non_spc = (adata_non_spc.obsm[COORDINATES][X_COORDINATES] > x_range[0]) & (
+                adata_non_spc.obsm[COORDINATES][X_COORDINATES] < x_range[1]) & (
+                          adata_non_spc.obsm[COORDINATES][Y_COORDINATES] > y_range[0]) & (
+                          adata_non_spc.obsm[COORDINATES][Y_COORDINATES] < y_range[1])
         adata_spc = adata_spc[aoi_spc]
         adata_non_spc = adata_non_spc[aoi_non_spc]
 
-        aoi = (adata.obsm['spatial']['center_x'] > x_range[0]) & (
-                adata.obsm['spatial']['center_x'] < x_range[1]) & (
-                          adata.obsm['spatial']['center_y'] > y_range[0]) & (
-                          adata.obsm['spatial']['center_y'] < y_range[1])
+        aoi = (adata.obsm[COORDINATES][X_COORDINATES] > x_range[0]) & (
+                adata.obsm[COORDINATES][X_COORDINATES] < x_range[1]) & (
+                          adata.obsm[COORDINATES][Y_COORDINATES] > y_range[0]) & (
+                          adata.obsm[COORDINATES][Y_COORDINATES] < y_range[1])
         adata = adata[aoi]
         save_spatial_signal(adata, signal_name, f'zoom_in_{title}')
 
@@ -442,9 +397,9 @@ def plot_GFP_adata_signal_spatially(adata, signal_name, adata_type, zoned=False,
     vmin = min(adata_spc.obs[signal_name].min(), adata_non_spc.obs[signal_name].min())
     vmax = max(adata_spc.obs[signal_name].max(), adata_non_spc.obs[signal_name].max())
 
-    sc1 = plt.scatter(adata_non_spc.obsm['spatial']['center_x'], adata_non_spc.obsm['spatial']['center_y'], cmap='plasma',
+    sc1 = plt.scatter(adata_non_spc.obsm[COORDINATES][X_COORDINATES], adata_non_spc.obsm[COORDINATES][Y_COORDINATES], cmap='plasma',
                       c=adata_non_spc.obs[signal_name], vmin=vmin, vmax=vmax, s=s)
-    plt.scatter(adata_spc.obsm['spatial']['center_x'], adata_spc.obsm['spatial']['center_y'], label='GFP',
+    plt.scatter(adata_spc.obsm[COORDINATES][X_COORDINATES], adata_spc.obsm[COORDINATES][Y_COORDINATES], label='GFP',
                 edgecolors='lime', cmap='plasma', c=adata_spc.obs[signal_name], vmin=0, vmax=4, s=s)
 
     cbar = plt.colorbar(sc1, label='Expected Zone')
@@ -453,34 +408,6 @@ def plot_GFP_adata_signal_spatially(adata, signal_name, adata_type, zoned=False,
     plt.xticks([])
     plt.yticks([])
     plt.show()
-
-def gene_confusion_contribution(tmpt,roi, genes,begin, end, is_sprinkled= True):
-    #instead of mapping cells to positions using the transcript density profiles
-    #get transcript density:
-    transcript_df = get_transcript_density_profile_for_monolayer_mapping(begin, end, genes)
-    binned_df = transcript_df.groupby(np.arange(len(transcript_df)) // 2).mean()
-    transcript_df = (binned_df-binned_df.min())/(binned_df.max()-binned_df.min())
-    # sns.heatmap(transcript_df.T)
-    # plt.title('trasncript df')
-    # plt.show()
-    #get gene confusion contribution per cell
-    adata = load_sprinkled_adata_hr_tmpt(tmpt, roi)
-    adata = map_monolayer_to_transcript_density_profiles(adata, genes, begin, end, binned=True)
-    adata = get_transcript_density_position_std(adata)
-    if is_sprinkled:
-        adata = adata[adata.obs['spc']]
-        title='GFP'
-    else:
-        adata = adata[~adata.obs['spc']]
-        title = 'non-GFP'
-    full_title = f'{title} {tmpt}'
-    bins = np.linspace(0,140,20)
-    # for gene in ZONE_MAPPING_GENES:
-    #     plt.hist(adata[:,gene].X, density=True, bins=bins)
-    #     plt.title(f'{gene} expression in {full_title}')
-    #     plt.ylim(0,0.15)
-    #     plt.show()
-    plot_confusion_contribution_cell_groups(adata, genes, transcript_df, 2, title=full_title)
 
 
 ##mapping based on the in vivo expression profiles
