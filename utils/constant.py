@@ -1,13 +1,6 @@
 from utils.imports import *
 
 def set_style():
- # plt.rcParams.update(plt.rcParamsDefault)
- # plt.rcParams.update({'figure.titlesize': 8, 'figure.titleweight': 'bold', 'axes.titlesize': 8,
- #                      'axes.titleweight': "bold", 'axes.labelsize': 8, 'axes.labelweight': 'bold',
- #                      "ytick.labelsize": 8, "xtick.labelsize": 8, 'legend.fontsize': 8,
- #                      'font.family': 'DejaVu Sans'})
- # plt.rcParams.update({'figure.figsize': (4, 3)})
- # plt.rcParams.update({'savefig.dpi': 300})
  plt.rcParams.update(plt.rcParamsDefault)  # Reset to default
 
  plt.rcParams.update({

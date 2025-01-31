@@ -14,7 +14,7 @@ def plot_all_neighborhood_zone_adoption_plots():
     #plot_inserted_cells_expected_zones_spatially()
 
     ###panel d: correlation in expected zone to neighbors
-    plot_expected_zone_correlations(ORGANOID_GENE_NAMES_NOGFP, num_neigh=5)
+    #plot_expected_zone_correlations(ORGANOID_GENE_NAMES_NOGFP, num_neigh=5)
 
     #plot_expected_zone_correlations(ZONE_MAPPING_GENES, num_neigh=5)
 
@@ -22,10 +22,10 @@ def plot_all_neighborhood_zone_adoption_plots():
     #plot_inserted_cells_expected_zone_distribution()
 
     ###panel f: inserted cells zone confusion
-    plot_inserted_cells_zone_confusion_distribution('12hr')
-    plot_inserted_cells_zone_confusion_distribution('72hr')
-
-    ###panel g: gene contribution to zone confusion
+    # plot_inserted_cells_zone_confusion_distribution('12hr')
+    # plot_inserted_cells_zone_confusion_distribution('72hr')
+    #
+    # ###panel g: gene contribution to zone confusion
     plot_zone_confusion_gene_contribution('72hr', genes=ZONE_MAPPING_GENES)
 
 
@@ -104,7 +104,7 @@ def calculate_gene_zone_confusion_contribution(tmpt, genes, begin, end, is_sprin
     random_cells_idx = np.random.choice(adata_ent_range.shape[0], size=num_cells, replace=False)
     adata_ent_range_subset = adata_ent_range[random_cells_idx,:]
     selected_data = adata_ent_range_subset.obsm['transcript_zone_dist']
-    sorted_indices = np.argsort(selected_data[:, 0])
+    sorted_indices = np.argsort(selected_data[:, 0]) #probability for zone 0
 
     adata_ent_range_subset = adata_ent_range[random_cells_idx, :]
 
@@ -173,12 +173,12 @@ def plot_inserted_cells_expected_zones_spatially():
     neighboring non inserted cells' expected zones. We show an example of a subregion of the monolayer measured 12 hours following
     cell insertion and another example of the monolayer measured 72 hours following cell insertion
     """
-    adata_GFP_12hr_roi1 = load_sprinkled_adata_hr_tmpt('12hr', 'roi1', ZONE_MAPPING_GENES)
+    adata_GFP_12hr_roi1 = load_sprinkled_adata_hr_tmpt('12hr', 'roi1')
     adata_GFP_12hr_roi1 = map_monolayer_to_transcript_density_profiles(adata_GFP_12hr_roi1, ZONE_MAPPING_GENES)
     plot_GFP_adata_signal_spatially(adata_GFP_12hr_roi1, 'transcript_exp_pos', '12hr roi1 GFP', zoned=True, x_range=GFP_12HR_ROI1_X,
                                     y_range=GFP_12HR_ROI1_Y, title='12hr_roi1_GFP_expected_zone')
 
-    adata_GFP_72hr_roi2 = load_sprinkled_adata_hr_tmpt('72hr', 'roi2', ZONE_MAPPING_GENES)
+    adata_GFP_72hr_roi2 = load_sprinkled_adata_hr_tmpt('72hr', 'roi2')
     adata_GFP_72hr_roi2 = map_monolayer_to_transcript_density_profiles(adata_GFP_72hr_roi2, ZONE_MAPPING_GENES)
     plot_GFP_adata_signal_spatially(adata_GFP_72hr_roi2, 'transcript_exp_pos', '72hr roi2 GFP', zoned=True,
                                     x_range=GFP_72HR_ROI2_X,

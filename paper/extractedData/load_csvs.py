@@ -257,4 +257,5 @@ def save_spatial_signal(adata, signal_name, save_name):
     signal_df['x'] = adata.obsm[COORDINATES][X_COORDINATES]
     signal_df['y'] = adata.obsm[COORDINATES][Y_COORDINATES]
     signal_df['signal'] = adata.obs[signal_name]
+    signal_df['sprinkled'] = adata.obs['spc']
     signal_df.to_csv(os.path.join(WT_MONOLAYER_DIR, f'{save_name}.csv'))

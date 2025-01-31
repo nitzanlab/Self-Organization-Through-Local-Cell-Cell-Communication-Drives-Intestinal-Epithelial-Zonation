@@ -16,7 +16,7 @@ def calculate_eroded_transcription_densities(plot_erosion=True, save_components=
     #plot_binary_mask_cleaned(binary_mask_cleaned, extent)
     #sanity check to view the fidelity of the mask, uncomment to plot
     #check_mask_fidelity(data, binary_mask_cleaned, extent)
-    ring_masks, avg_ring_width = calculate_ring_masks(binary_mask_cleaned, xedges, yedges, num_iterations=NUM_ITERATIONS, plot_rings=False, save_rings=save_components)
+    ring_masks, avg_ring_width, densities, areas, counts = calculate_ring_masks(binary_mask_cleaned, xedges, yedges, num_iterations=NUM_ITERATIONS, plot_rings=False, save_rings=save_components)
     result_dict = compute_transcript_density_in_rings_all_genes(
         binary_mask=binary_mask_cleaned,
         erosion_step=5,
@@ -67,7 +67,7 @@ def calculated_and_plot_zoomed_in_erosion_rings():
     #compute the erosion components
     xedges, yedges, binary_mask_cleaned, extent = compute_unperturbed_monolayer_spatial_mask(save_to_pickle=False)
     #compute ring masks
-    ring_masks = calculate_ring_masks(binary_mask_cleaned, xedges, yedges, num_iterations=NUM_ITERATIONS,
+    ring_masks, densities, areas, counts = calculate_ring_masks(binary_mask_cleaned, xedges, yedges, num_iterations=NUM_ITERATIONS,
                                       plot_rings=False, save_rings=True)
     #plot the erosion steps on a zoomed in region
     plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=EROSION_RINGS_ZOOM_IN,
@@ -175,7 +175,7 @@ def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings
     print(avg_ring_widths)
     arr_avg = np.array(avg_ring_widths)
     print(np.mean(arr_avg[np.isfinite(avg_ring_widths)]))
-    return ring_masks, np.array(avg_ring_widths) #densities, areas, counts
+    return ring_masks, np.array(avg_ring_widths) ,densities, areas, counts
 
 def calculate_iteration_width(mask1, mask2):
     """
@@ -194,7 +194,7 @@ def calculate_iteration_width(mask1, mask2):
     ring_perimeter = region_mask.perimeter
 
     # Correct the area and perimeter back to original dimensions
-    corrected_ring_area = ring_area*(XY_SPACING ** 2)
+    corrected_ring_area = ring_area*(XY_SPACING ** 2) #binned and spaced every XY_SPACING beforehand in reality,
     corrected_ring_perimeter = ring_perimeter*(XY_SPACING)
 
     # Calculate the average width of the ring based on the corrected perimeter
