@@ -6,6 +6,12 @@ match those observed in the canonical zonation genes in in-vivo intestine
 from paper.extractedData.load_csvs import *
 from paper.plotScripts.erosion_calculations import *
 def plot_all_autonomous_figure_plots(saved_datasets=False):
+    """
+
+    :param saved_datasets: if already ran with saved_datasets=True, then the necessary files
+    exist in the directory and can be used for calculations and plots
+    :return:
+    """
     ### panel a is schematic ,created in Biorender.com
     ###panel b : #TODO:Yael
 
@@ -26,7 +32,7 @@ def plot_all_autonomous_figure_plots(saved_datasets=False):
          plot_erosion_rings_from_saved_components()
          result_dict = load_transcript_densities_unperturbed_monolayer()
     else:
-         result_dict = calculate_eroded_transcription_densities(plot_erosion=True, save_components=False)
+         result_dict = calculate_eroded_transcription_densities(plot_erosion=True, save_components=True)
     ###panel g: erosion expression profiles
     plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True, normalize=True)
     #panel h: heatmap comparison in vivo reconstruction to monolayer, erosion measured expression from edge to interior

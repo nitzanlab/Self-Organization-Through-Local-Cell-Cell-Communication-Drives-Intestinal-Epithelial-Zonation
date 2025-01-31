@@ -24,7 +24,7 @@ def calculate_eroded_transcription_densities(plot_erosion=True, save_components=
         data=data[data['name'] == 'Nupr1'],
         xedges=xedges,
         yedges=yedges,
-        xy_spacing=XY_SPACING)
+        xy_spacing=XY_SPACING, save=save_components)
 
     if plot_erosion:
         plot_erosion_rings_from_calculated_components(xedges, yedges, binary_mask_cleaned, ring_masks)
@@ -455,7 +455,7 @@ def compute_transcript_density_in_rings(gene_name, binary_mask, erosion_step, nu
 
 
 def compute_transcript_density_in_rings_all_genes(binary_mask, erosion_step, num_iterations, data, xedges, yedges,
-                                                  xy_spacing=XY_SPACING):
+                                                  xy_spacing=XY_SPACING, save=False):
     """
     Computes the density of transcripts in successive rings of the mask for all genes.
 
@@ -552,7 +552,8 @@ def compute_transcript_density_in_rings_all_genes(binary_mask, erosion_step, num
 
         # Update previous mask
         previous_mask = eroded_mask.copy()
-
+    if save:
+        save_transcript_densities_unperturbed_monolayer(result_dict)
     return result_dict
 
 
