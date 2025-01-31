@@ -8,7 +8,7 @@ from paper.extractedData.load_csvs import *
 def plot_all_neighborhood_zone_adoption_plots():
     ###panel a: schematic diagram created in  https://BioRender.com
     ###panel b: expected cell zones in unperturbed monolayer
-    #plot_expected_cell_zones()
+    plot_expected_cell_zones()
 
     ###panel c: expected zones in inserted cells, subregion of inserted monolayers
     #plot_inserted_cells_expected_zones_spatially()
@@ -26,7 +26,7 @@ def plot_all_neighborhood_zone_adoption_plots():
     # plot_inserted_cells_zone_confusion_distribution('72hr')
     #
     # ###panel g: gene contribution to zone confusion
-    plot_zone_confusion_gene_contribution('72hr', genes=ZONE_MAPPING_GENES)
+    #plot_zone_confusion_gene_contribution('72hr', genes=ZONE_MAPPING_GENES)
 
 
 def plot_zone_confusion_gene_contribution(tmpt, genes=ZONE_MAPPING_GENES):
@@ -119,7 +119,7 @@ def plot_expected_cell_zones():
     based on how they match the zones measured by eroding the monolayer from its edge inwards.
     """
     plot_expected_position_mapping_unperturbed_cosine_sim(ZONE_MAPPING_GENES, 'zone mapping genes', to_plot=True,
-                                                          to_save=False)
+                                                          to_save=True)
 
 
 def plot_expected_position_mapping_unperturbed_cosine_sim(genes, gene_title='',zoned=False, x_range=None, y_range=None, to_plot=True, to_save=False, save_name=''):

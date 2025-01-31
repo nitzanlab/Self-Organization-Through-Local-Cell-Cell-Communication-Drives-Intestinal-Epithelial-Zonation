@@ -1,20 +1,60 @@
 from utils.imports import *
 
-def set_style():
- plt.rcParams.update(plt.rcParamsDefault)  # Reset to default
+"""
+in order to load the data properly and be able to conduct the analyses and reproduce the figure results:
+1. download the data from this paper from :
+2. download from 'Moor, A. E., Harnik, Y., Ben-Moshe, S., Massasa, E. E., Rozenberg, M., Eilam, R., ... & Itzkovitz, S.
+ (2018). Spatial reconstruction of single enterocytes uncovers broad zonation along the intestinal villus axis. Cell,
+  175(4), 1156-1167.' 
+  (a) table_A_LCM_TPM_values.tsv
+  (b) table_D_zonation_reconstruction.tsv 
+  and save them in an additional director 'in_vivo_villus_data'
+3. at this point the directories should be in the following structure:
+  HOME_DIR
+  ---in_vivo_villus_data 
+    --table_A_LCM_TPM_values.tsv
+    --table_D_zonation_reconstruction.tsv
+  ---- sprinkled 
+    -- 12hr
+        --roi1
+        --roi2
+        --roi3
+    -- 72hr
+       --roi1
+       --roi2
+       --roi3
+       --roi4
+ ---- unperturbed
+4. change the directory path for HOME_DIR to where you have saved these directories in the format explained above 
+"""
 
- plt.rcParams.update({
-     'figure.titlesize': 8, 'figure.titleweight': 'bold',
-     'axes.titlesize': 8, 'axes.titleweight': "bold",
-     'axes.labelsize': 8, 'axes.labelweight': 'bold',
-     "ytick.labelsize": 8, "xtick.labelsize": 8,
-     'legend.fontsize': 8, 'font.family': 'Arial',
-     'figure.figsize': (4, 3), 'savefig.dpi': 300,
-     "pdf.fonttype": 42,  # Keep text editable in PDFs
-     "ps.fonttype": 42,  # Keep text editable in PS files
-     "text.usetex" : False
- })
 
+HOME_DIR = 'C:/Users/micha/thesis/code/data/intestinal_organoid/'
+
+
+SPRINKLED_DIR = os.path.join(HOME_DIR, 'sprinkled')
+IN_VIVO_VILLUS_DIR = os.path.join(HOME_DIR, 'in_vivo_villus_data')
+UNPERTURBED_DIR = os.path.join(HOME_DIR, 'unperturbed')
+
+
+
+DATA_DIR= 'C:/Users/micha/thesis/code/data/intestinal_organoid/non_sprinkled_july23_pasadena/'
+##ROIS constants
+TMPT_TO_ROIS_DICT = {'12hr': ['roi1', 'roi2', 'roi3'], '72hr':['roi1', 'roi2', 'roi3', 'roi4']}
+MULT_ROIS_DIR = 'C:/Users/micha/thesis/code/data/intestinal_organoid/sprinkled_cells_multiple_rois/'
+
+
+SHALEV_DATA_DIR = 'C:/Users/micha/thesis/code/data/intestinal_organoid/shalev_data/'
+
+NUM_POSITIONS_LCM_ATLAS = 5
+WT_MONOLAYER_DIR = r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena'
+
+VILLUS_LOCATION_COLUMNS = [ 'V1_mean', 'V2_mean', 'V3_mean', 'V4_mean', 'V5_mean', 'V6_mean']
+
+AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','autonomous_zonation_figure_plots')
+CONTINUOUS_REGENERATIVE_RESPONSE_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','continuous_regenerative_figure_plots')
+ZONATION_PLASTICITY_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','zonation_plasticity_plots')
+NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','neighborhood_zone_adoption_plots')
 
 #cell type constants
 CELL_TYPES_TO_MARKER_GENES = {'enterocyte':['Alpi', 'Aldob','Sis','Apoa1'], 'goblet_cells':['Muc2'],'EEC':['Chga'],'Tuft_cells':['Dclk1'],'paneth_cells':['Lyz1'], 'stem_cells':['Lgr5','Olfm4'], 'regenerative':['Msln','Ahnak']}
@@ -48,10 +88,7 @@ PIXEL2NM = 107.11
 EROSION_RINGS_ZOOM_IN = [1500, 2000]
 
 
-AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','autonomous_zonation_figure_plots')
-CONTINUOUS_REGENERATIVE_RESPONSE_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','continuous_regenerative_figure_plots')
-ZONATION_PLASTICITY_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','zonation_plasticity_plots')
-NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','neighborhood_zone_adoption_plots')
+
 MID_X_RANGE = [9219, 17780]
 MID_Y_RANGE = [14269, 20986]
 
@@ -83,10 +120,26 @@ CELl_TYPE_WO_ENT_REG_PLOT_ORDER = ['EEC','Tuft_cells','paneth_cells','goblet_cel
 CELl_TYPEs_WO_REGENERATIVE = ['EEC','Tuft_cells','paneth_cells','goblet_cells','stem_cells','enterocyte']
 ##gene constants
 
-DATA_DIR= 'C:/Users/micha/thesis/code/data/intestinal_organoid/non_sprinkled_july23_pasadena/'
-ORGANOID_GENE_NAMES = np.load(os.path.join(DATA_DIR, 'organoid_gene_names.npy'))
+
+ORGANOID_GENE_NAMES = np.array(['Nupr1', 'Ahnak' ,'Lypd8', 'Ier3' ,'Pmepa1', 'Slc12a2', 'Apob' ,'Junb', 'Lyz1',
+ 'Pigr', 'Anxa13','Mki67','Olfm4','S100g','Anxa10','Sis','Prxl2a','Basp1'
+ 'Sqstm1','Txndc5','Sprr1a','Ccdc71l','Ppp1r1b','Rhoc','Atf5','Serpinb9b'
+ 'Ccna2','Cdca7','Il1rn','Kcne3','Apoc2','Cryab','Clps','Plat','Tac1'
+ 'Nlrp6','Sult6b2','Slc5a1','Gkn3','Egfr','Selenom','Klf4','Sptssb'
+ 'Apoa4','Il18','Rnase1','Lgr5','Reg3g','Yap1','Hepacam2','Slc2a2','Insm1'
+ 'Neurog3','Neurod1','Vim','Reg3b','Pcsk1','Rab3c','Pclo','Slc28a2','Cck'
+ 'Msln','Fos','Tm4sf20','Anxa5','Clca3b','Plaur','Hook1','Pycard','Pclaf'
+ 'Ccn2','Aldh1b1','Gstm3','Zfp36l2','Fcgbp','Jaml','Cps1','Smim24','Ndrg1'
+ 'Ccl25','Chga','Smoc2','Btc','Tuba1a','Apoa1','Adh6a','Alpi','S100a7a'
+ 'Clca1','Cavin3','Rgcc','Mal','Add3','Muc2','Axin2','Myb','Sct','Cyp2c29'
+ 'Ly6d','Lor','Slc7a7','Mmp7','Tph1','H4c9','Gstt1','Guca2a','Cpe'
+ 'Apobec1','Ada','Slc7a9','Scg2','Npc1l1','Slc2a5','Nt5e','Reg3a','Slc7a8'
+ 'Dclk1','Slc15a1','Ang4','Gstm1','Ly6a','Rps23','Itln1','Reg1','Agr2'
+ 'Tff3','Prap1','Spink4','Rbp2','Zg16','Fabp1','Reg4','Tm4sf4','Anxa1'
+ 'Lgals3','F3','Clu','Chgb','Aldob'])
+
 ORGANOID_GENE_NAMES_NOGFP = ORGANOID_GENE_NAMES[ORGANOID_GENE_NAMES !='GFP']
-ORGANOID_NO_CLU_GENE_NAMES = ORGANOID_GENE_NAMES_NOGFP[ORGANOID_GENE_NAMES_NOGFP!='Clu']
+
 SPATIAL_CORRELATION_GENE_PANELS = ['Aldob', 'Chgb']
 ENTEROCYTE_GENES =  ['Alpi','Sis','Apoa1','Aldob', 'Apoa4', 'Ada']
 
@@ -99,6 +152,7 @@ ENT_REG_ALL_GENES = np.concatenate((ENT_REG_GENES, ENT_GEG_GENES_2))
 KEY_ENT_AND_REG_GENES = ['Ada', 'Apoa4', 'Apoa1', 'Alpi', 'Sis','Clu','Msln','Ahnak']
 ZONATION_COMPARISON_GENES =  ['Ada', 'Apoa4', 'Lgals3', 'Slc28a2', 'Aldob', 'Ccl25', 'Fabp1', 'Lypd8', 'Reg3b', 'Reg3g', 'Sis',
                     'Spink4']
+
 INVIVO_ZONATION_GENES = ['Neat1','Malat1','Reg3g','Reg3b','Reg3a','Nlrp6','Lypd8','Il18','Ccl25', 'Apobec1','Apob',
                          'Apoa4','Apoa1','NPC1L1','Slc15a1','Slc5a1','Slc2a5','Slc2a2','Slc7a9','Slc7a8','Slc7a7', 'Alpi','Aldob','Sis','Ada','Nt5e']
 
@@ -110,59 +164,15 @@ REG_SUB_GROUP = ['Ahnak','Msln','Clu']
 
 UNPERTURBED_CELL_TYPE_CLUSTERS = {0:'regenerative1',1:'regenerative2',2:'regenerative3',3:'enterocyte',4:'secretory', 5:'progenitor',6:'regenerative',7:'unknown'}
 
-FUNCTIONAL_GENES = ['Apobec1', 'Apob', 'Apoa4', 'Apoa1', 'Nlpc1l1', 'Slc15a1', 'Slc5a1', 'Slc2a5', 'Slc2a2', 'Slc7a9',
-                    'Slc7a8', 'Slc7a7']
-CHOLESTEROL_GENES = ['Apobec1', 'Apob', 'Apoa4', 'Apoa1', 'Nlpc1l1']
-PEPTIDE_GENE = ['Slc15a1']
-CARBOHYDRATE_GENES = ['Slc5a1', 'Slc2a5', 'Slc2a2']
-AMINO_ACID_GENES = ['Slc7a9', 'Slc7a8', 'Slc7a7']
-reg_genes = ['Reg3g', 'Reg3b', 'Reg3a', 'Nlrp6', 'Lypd8', 'Ill18', 'Ccl25']
-
 TRANSCRIPT_DENSITY_GENES = ['Anxa5','Apoa4','Apoa1','Alpi','Aldob','Sis']
 
-ZONE_MAPPING_GENES_WO_ALDOB =  ['Ada', 'Apoa4', 'Apoa1', 'Alpi', 'Sis']
-ZONE_MAPPING_GENES_WO_ALPI =  ['Ada', 'Apoa4', 'Apoa1', 'Aldob', 'Sis']
-ZONE_MAPPING_GENES_WO_SIS = ['Ada', 'Apoa4', 'Apoa1', 'Aldob', 'Alpi']
-ZONE_MAPPING_GENES_WO_ADA = ['Apoa4', 'Apoa1', 'Aldob', 'Alpi', 'Sis']
+
 ZONE_MAPPING_GENES = ['Ada', 'Apoa4', 'Apoa1', 'Aldob', 'Alpi', 'Sis']
-ZONE_MAPPING_GENES_CHECK = ['Ada', 'Apoa4', 'Apoa1', 'Aldob', 'Alpi']
-
-ZONE_MAPPING_WITH_REG = ['Ada', 'Apoa4', 'Apoa1', 'Aldob', 'Alpi', 'Sis','Msln','Clu','Ahnak']
-##invivo
-
-BHB_HIGH_DIR = r'C:\Users\micha\thesis\code\data\intestinal_organoid\spatial_substance_perturb\20241015_150428_062__WellB07_ChannelCY5,A594,CY3,YFP,DAPI,Brightfield_Seq0000 - Stitched_crop.nd2'
-PERTURB_DIR = r'C:\Users\micha\thesis\code\data\intestinal_organoid\spatial_substance_perturb'
-PERTURB_CHANNELS = ['cy3 ', 'cy5 ', 'yfp ', 'a594_']
-PERTURBED_DATASETS = ['bmp 4 high.csv','bmp 2 high 2.csv','iwp-2 - wnt inhibitor high.csv','ldn - bmp inhibitor - low.csv']
-CHANNELS_TO_GENES = {'yfp ': ['Olfm4','Lgr5'], 'cy3 ' : 'Sis', 'a594_' : 'Msln', 'cy5 ' : 'Apoa4'}
-PERTURB_ENT_GENES = ['Sis','Apoa4']
-PERTURB_SIS_THRESH = 6000
-PERTURB_APOA4_THRESH = 7100
-PERTURB_MAX_EXP = {'bmp 2 high 2':0.75, 'bmp 2 high':0.75,'bmp 2 low 2':0.75,'bmp 4 high 2':0.6,'bmp 4 high':0.5,'bmp 4 low 2':0.8,
-                   'bmp2 low':0.8,'iwp-2 - wnt inhibitor high':0.65,'iwp-2 high':0.6, 'iwp-2 low 2':0.65, 'ldn - bmp inhibitor - low':0.65,
-                   'ldn low 2':0.65, 'bmp 4 low':0.8, 'iwp-2 high 2':0.6,'iwp-2 wnt inhib low':0.65
-                   }
 
 
-SHALEV_DATA_DIR = 'C:/Users/micha/thesis/code/data/intestinal_organoid/shalev_data/'
-NUM_POSITIONS_LCM_ATLAS = 5
-WT_MONOLAYER_DIR = r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena'
-GENE_TO_ZONE_DIR =  r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\reconstruction_new\Ada_0.5'
-VILLUS_LOCATION_COLUMNS = [ 'V1_mean', 'V2_mean', 'V3_mean', 'V4_mean', 'V5_mean', 'V6_mean']
-INITIAL_RES_DIR =  r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\minimal_reference_atlas_new'
-CHECK_RES_DIR = r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\enterocyte_recon_with_atlas'
-NOVOSPARC_MAPPING_DIR = r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\autonomous_zonation_dir\ada_sis'
-NOVOSPARC_MAPPING_W_ZONATED_GENES_DIR = r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\autonomous_zonation_dir\using_only_zonated_genes_for_reconstruction\ada_sis'
-NOVOSPARC_MAPPING_DIR_GENERAL = r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\autonomous_zonation_dir'
-INITIAL_MAPPING = r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena\minimal_reference_atlas_new\ada\alpha_linear_0_5'
-ZONE_CONFUSION_DIR = r'C:\Users\micha\thesis\code\data\intestinal_organoid\sprinkled_cells\zone_confusion'
 
-#novosparc mapping - tissue zonation
-TISSUE_SDGE = 'sdge_8662_cells_5_locations.txt'#'sdge_7749_cells_5_locations.txt'
-ENT_TISSUE_SDGE = 'sdge_4953_cells_5_locations.txt'
-TISSUE_GW = 'cell_to_positions_tp_Ada_Sis.txt'
-TISSUE_GW_GENERAL = 'cell_to_positions_tp.txt'
-REFERENCE_GENES = ['Ada', 'Apoa4', 'Aldob', 'Sis']
+
+
 ALL_BOTTOM_LNDMRK_GENES_SHALEV = ['Fabp1', 'Plac8', 'Lgals4', 'Rpl41', 'Cox4i1', 'Cox6c', 'Atp5e', 'Atp5j2', 'Uqcrq',
                                   'Cox7a2',
                                   'Cox6b1', 'Rps14', 'Reg3b', 'Uqcrh', 'Cox5b', 'Uqcr11','Atpif1', 'Txn1', 'Atp5g3',
@@ -184,13 +194,6 @@ ALL_TOP_LNDMRK_GENES_SHALEV = ['Apoa4', 'Apoc3', 'Krt20', 'Lgals3', 'Ada', 'Tmsb
                                'Cfap20', 'Myo7a', 'Pam', 'Zfp280d', 'Ythdc2', 'Cep57', 'Acad9', 'Chek2']
 
 
-
-
-
-#wt monolayer mapping to invivo
-NUM_NEIGHBORS_S = 5
-NUM_NEIGHBORS_T = 2
-
 LOW_ENT_RANGE = [1.6,1.8]
 MEDIUM_ENT_RANGE = [1.8,2.0]
 HIGH_ENT_RANGE = [2.1,2.3]
@@ -199,26 +202,21 @@ UNIFORM_DIST_RANGE = [2.5,2.6]
 ENTROPY_RANGES = [LOW_ENT_RANGE, HIGH_ENT_RANGE, VERY_HIGH_ENT_RANGE, UNIFORM_DIST_RANGE]
 
 
-##Tacco
-TACCO_RESULTS_DIR = r'C:\Users\micha\thesis\code\data\intestinal_organoid\sprinkled_cells\tacco_res'
-
 #GFP cells
 SPC_GFP_THRESH = 2
 
-CLU_THRESH = 1
+def set_style():
+ plt.rcParams.update(plt.rcParamsDefault)  # Reset to default
 
+ plt.rcParams.update({
+     'figure.titlesize': 8, 'figure.titleweight': 'bold',
+     'axes.titlesize': 8, 'axes.titleweight': "bold",
+     'axes.labelsize': 8, 'axes.labelweight': 'bold',
+     "ytick.labelsize": 8, "xtick.labelsize": 8,
+     'legend.fontsize': 8, 'font.family': 'Arial',
+     'figure.figsize': (4, 3), 'savefig.dpi': 300,
+     "pdf.fonttype": 42,  # Keep text editable in PDFs
+     "ps.fonttype": 42,  # Keep text editable in PS files
+     "text.usetex" : False
+ })
 
-
-#10x gene set by clusters
-GENE_CLUSTER_DIR = r'C:\Users\micha\thesis\code\data\intestinal_organoid\10x_cluster_genes'
-GENE_CLUSTER_RES = 'merfish_gene_list_with_all_cluster_umi_counts.csv'
-
-
-##ROIS constants
-TMPT_TO_ROIS_DICT = {'12hr': ['roi1', 'roi2', 'roi3'], '72hr':['roi1', 'roi2', 'roi3', 'roi4']}
-MULT_ROIS_DIR = 'C:/Users/micha/thesis/code/data/intestinal_organoid/sprinkled_cells_multiple_rois/'
-
-#GFP cells
-SPRINKLED_CELL_DIR = 'C:/Users/micha/thesis/code/data/intestinal_organoid/sprinkled_cells/'
-
-GFP_DIR = 'C:/Users/micha/thesis/code/data/intestinal_organoid/sprinkled_cells/GFP_exp'

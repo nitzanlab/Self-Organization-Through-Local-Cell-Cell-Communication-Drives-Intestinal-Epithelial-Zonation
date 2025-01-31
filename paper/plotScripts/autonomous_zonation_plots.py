@@ -51,7 +51,7 @@ def plot_gene_groups_expression_on_wt_monolayer(gene_group1:list, gene_group2:li
 
     #save spatial signal as a pandas dataframe
     adata.obs['relative_exp'] = gene_exp
-    save_spatial_signal(adata, 'relative_exp', f'{gene_group1}_{gene_group2}_spatial_expression')
+    save_spatial_signal(adata, 'relative_exp', f'{gene_group1}_{gene_group2}_spatial_expression', sprinkled=False)
 
     sctr1 = plt.scatter(adata.obsm[COORDINATES][X_COORDINATES], adata.obsm[COORDINATES][Y_COORDINATES],
                         c=gene_exp, s=40,  cmap='viridis')

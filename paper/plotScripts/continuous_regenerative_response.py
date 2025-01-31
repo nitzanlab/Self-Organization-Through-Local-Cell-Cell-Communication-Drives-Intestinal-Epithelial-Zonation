@@ -36,7 +36,7 @@ def plot_gene_expression_across_cell_types_spatially(gois,colors, x_region=UNPER
     adata = get_unperturbed_monolayer_adata()
     clusters_df = pd.read_csv(os.path.join(DATA_DIR, 'cell_by_gene_cluster_annotations.csv'))
     clusters = clusters_df.sort_values(by='object_id', ascending=True)['cluster_id']
-    adata.obs['cluster'] = clusters
+    adata.obs['cluster'] = clusters.values
 
     cluster_dict = {
         0: 'regenerative', 1: 'regenerative', 2: 'regenerative', 3: 'enterocyte',
@@ -44,9 +44,10 @@ def plot_gene_expression_across_cell_types_spatially(gois,colors, x_region=UNPER
     }
     adata.obs['cluster_name'] = adata.obs['cluster'].map(cluster_dict)
     signal_df = pd.DataFrame(adata[:,gois].X,columns=gois)
-    signal_df['x'] = adata.obsm[COORDINATES][X_COORDINATES]
-    signal_df['y'] = adata.obsm[COORDINATES][Y_COORDINATES]
-    signal_df['cluster_type'] = adata.obs['cluster_name']
+    signal_df['x'] = np.array(adata.obsm[COORDINATES][X_COORDINATES])
+    signal_df['y'] = np.array(adata.obsm[COORDINATES][Y_COORDINATES])
+    # Add cluster type
+    signal_df['cluster_type'] = np.array(adata.obs['cluster_name'])
     signal_df.to_csv(os.path.join(WT_MONOLAYER_DIR, f'{title}.csv'))
     # Edge color customization for clusters 4 and 5
     edge_colors = [

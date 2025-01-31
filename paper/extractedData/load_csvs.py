@@ -252,10 +252,11 @@ def get_invivo_smooth_exp(gene_names):
     return invivo_smooth_exp
 
 
-def save_spatial_signal(adata, signal_name, save_name):
+def save_spatial_signal(adata, signal_name, save_name, sprinkled=False):
     signal_df = pd.DataFrame(adata.X, columns=adata.var_names)
-    signal_df['x'] = adata.obsm[COORDINATES][X_COORDINATES]
-    signal_df['y'] = adata.obsm[COORDINATES][Y_COORDINATES]
-    signal_df['signal'] = adata.obs[signal_name]
-    signal_df['sprinkled'] = adata.obs['spc']
+    signal_df['x'] = np.array(adata.obsm[COORDINATES][X_COORDINATES])
+    signal_df['y'] = np.array(adata.obsm[COORDINATES][Y_COORDINATES])
+    signal_df['signal'] = np.array(adata.obs[signal_name])
+    if sprinkled:
+        signal_df['sprinkled'] = np.array(adata.obs['spc'])
     signal_df.to_csv(os.path.join(WT_MONOLAYER_DIR, f'{save_name}.csv'))
