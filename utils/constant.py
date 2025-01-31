@@ -28,26 +28,29 @@ in order to load the data properly and be able to conduct the analyses and repro
 4. change the directory path for HOME_DIR to where you have saved these directories in the format explained above 
 """
 
-
-HOME_DIR = 'C:/Users/micha/thesis/code/data/intestinal_organoid/'
-
-
-SPRINKLED_DIR = os.path.join(HOME_DIR, 'sprinkled')
-IN_VIVO_VILLUS_DIR = os.path.join(HOME_DIR, 'in_vivo_villus_data')
-UNPERTURBED_DIR = os.path.join(HOME_DIR, 'unperturbed')
+##CHANGE the directory path to where you have saved the directories above
+HOME_DIR = 'C:/Users/micha/thesis/code/data/intestinal_organoid/repo_dir/'
 
 
+#can change
+SPRINKLED_DIR_NAME = 'sprinkled'
+IN_VIVO_DIR_NAME = 'in_vivo_villus_data'
+UNPERTURBED_DIR_NAME = 'unperturbed'
+EROSION_DIR_NAME = 'monolayer_erosion'
 
-DATA_DIR= 'C:/Users/micha/thesis/code/data/intestinal_organoid/non_sprinkled_july23_pasadena/'
+#fits the structure explained at the top of the file. we suggest not to change
+SPRINKLED_DIR = os.path.join(HOME_DIR,SPRINKLED_DIR_NAME)
+IN_VIVO_VILLUS_DIR = os.path.join(HOME_DIR, IN_VIVO_DIR_NAME)
+UNPERTURBED_DIR = os.path.join(HOME_DIR, UNPERTURBED_DIR_NAME)
+EROSION_DIR = os.path.join(UNPERTURBED_DIR,EROSION_DIR_NAME)
+
+
 ##ROIS constants
 TMPT_TO_ROIS_DICT = {'12hr': ['roi1', 'roi2', 'roi3'], '72hr':['roi1', 'roi2', 'roi3', 'roi4']}
-MULT_ROIS_DIR = 'C:/Users/micha/thesis/code/data/intestinal_organoid/sprinkled_cells_multiple_rois/'
 
 
-SHALEV_DATA_DIR = 'C:/Users/micha/thesis/code/data/intestinal_organoid/shalev_data/'
 
 NUM_POSITIONS_LCM_ATLAS = 5
-WT_MONOLAYER_DIR = r'C:\Users\micha\thesis\code\data\intestinal_organoid\non_sprinkled_july23_pasadena'
 
 VILLUS_LOCATION_COLUMNS = [ 'V1_mean', 'V2_mean', 'V3_mean', 'V4_mean', 'V5_mean', 'V6_mean']
 

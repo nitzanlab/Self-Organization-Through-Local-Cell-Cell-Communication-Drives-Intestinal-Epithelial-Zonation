@@ -660,7 +660,7 @@ def plot_unperturbed_monolayer_gene_density_to_invivo_comparisons():
     gene_density_df_normalized = gene_density_smoothened.apply(lambda x: (x - x.min()) / (x.max() - x.min()))
     x_gene_density = np.linspace(0,1,gene_density_df.shape[0])
     x_invivo = np.linspace(0, 1, invivo_exp.shape[1])
-    save_path = os.path.join(WT_MONOLAYER_DIR, 'invivo_to_monolayer_expression_profiles')
+    save_path = os.path.join(UNPERTURBED_DIR, 'invivo_to_monolayer_expression_profiles')
 
     for i, gene in enumerate(genes_LCM):
         print(f'{gene}, num {i}')

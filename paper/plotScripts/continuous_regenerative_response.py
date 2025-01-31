@@ -34,7 +34,7 @@ def plot_all_continuous_regenerative_response_plots():
 
 def plot_gene_expression_across_cell_types_spatially(gois,colors, x_region=UNPERTURBED_ZOOMED_IN_X, y_region=UNPERTURBED_ZOOMED_IN_Y, title=''):
     adata = get_unperturbed_monolayer_adata()
-    clusters_df = pd.read_csv(os.path.join(DATA_DIR, 'cell_by_gene_cluster_annotations.csv'))
+    clusters_df = pd.read_csv(os.path.join(UNPERTURBED_DIR, 'cell_by_gene_cluster_annotations.csv'))
     clusters = clusters_df.sort_values(by='object_id', ascending=True)['cluster_id']
     adata.obs['cluster'] = clusters.values
 
@@ -48,7 +48,7 @@ def plot_gene_expression_across_cell_types_spatially(gois,colors, x_region=UNPER
     signal_df['y'] = np.array(adata.obsm[COORDINATES][Y_COORDINATES])
     # Add cluster type
     signal_df['cluster_type'] = np.array(adata.obs['cluster_name'])
-    signal_df.to_csv(os.path.join(WT_MONOLAYER_DIR, f'{title}.csv'))
+    signal_df.to_csv(os.path.join(UNPERTURBED_DIR, f'{title}.csv'))
     # Edge color customization for clusters 4 and 5
     edge_colors = [
         "#FFD700" if cluster == 4 else "#FF4500" if cluster == 5 else 'none'  # Gold for cluster 4, vibrant orange-red for cluster 5
@@ -161,7 +161,7 @@ def calculate_regenerative_gene_expression_neighborhood_similarity(genes:list)->
     #load unperturbed monolayer
     adata = get_unperturbed_monolayer_adata()
 
-    clusters_df = pd.read_csv(os.path.join(DATA_DIR, 'cell_by_gene_cluster_annotations.csv'))
+    clusters_df = pd.read_csv(os.path.join(UNPERTURBED_DIR, 'cell_by_gene_cluster_annotations.csv'))
     clusters = clusters_df.sort_values(by='object_id', ascending=True)['cluster_id']
     unique_clusters = np.unique(clusters)
 

@@ -44,7 +44,7 @@ def plot_gene_correlation_histograms_GFP_to_wt(num_genes, save_title):
     moran_i_genes_idx = [np.where(ORGANOID_GENE_NAMES_NOGFP == item)[0][0] for item in top_n_moran_i_genes]
 
     #load unperturbed monoalyer gene expression correlations:
-    wt_non_GFP_gene_corr = pd.read_csv(os.path.join(WT_MONOLAYER_DIR, 'wt_gene_correlation.csv'), index_col=0)
+    wt_non_GFP_gene_corr = pd.read_csv(os.path.join(UNPERTURBED_DIR, 'wt_gene_correlation.csv'), index_col=0)
     wt_non_GFP_gene_corr = wt_non_GFP_gene_corr.reindex(ORGANOID_GENE_NAMES_NOGFP)
     wt_non_GFP_gene_corr = wt_non_GFP_gene_corr['corr'].loc[top_n_moran_i_genes]
 

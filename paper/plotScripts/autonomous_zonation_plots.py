@@ -26,7 +26,7 @@ def plot_all_autonomous_figure_plots(saved_datasets=False):
          plot_erosion_rings_from_saved_components()
          result_dict = load_transcript_densities_unperturbed_monolayer()
     else:
-         result_dict = calculate_eroded_transcription_densities(plot_erosion=True, save_components=True)
+         result_dict = calculate_eroded_transcription_densities(plot_erosion=True, save_components=False)
     ###panel g: erosion expression profiles
     plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True, normalize=True)
     #panel h: heatmap comparison in vivo reconstruction to monolayer, erosion measured expression from edge to interior

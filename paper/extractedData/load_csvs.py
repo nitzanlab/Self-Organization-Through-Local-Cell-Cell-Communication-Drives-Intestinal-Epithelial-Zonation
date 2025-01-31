@@ -7,7 +7,7 @@ from utils.constant import *
 ####Unperturbed Monolayer Data Loader #####
 
 def load_unperturbed_intestinal_organoid_cell_by_gene_mat():
-    cell_by_gene_file_path = os.path.join(DATA_DIR, 'cell_by_gene_cluster_annotations.csv')
+    cell_by_gene_file_path = os.path.join(UNPERTURBED_DIR, 'cell_by_gene_cluster_annotations.csv')
     #cell_by_gene_file_path = os.path.join(DATA_DIR,'cell_by_gene_mat.csv')
 
     # Load CSV file into a Pandas DataFrame
@@ -20,7 +20,7 @@ def load_unperturbed_intestinal_organoid_cell_by_gene_mat():
     return cell_by_gene_data_organoid
 
 def load_unperturbed_cell_coords():
-    coordinates_file_path = os.path.join(DATA_DIR,'segmentation_cells.csv')
+    coordinates_file_path = os.path.join(UNPERTURBED_DIR,'segmentation_cells.csv')
     coordinates_data = pd.read_csv(coordinates_file_path)
     coordinates_data = coordinates_data.sort_values(by='label', ascending=True)
     return coordinates_data
@@ -40,15 +40,15 @@ def get_unperturbed_monolayer_adata(num_neigh=5):
     return adata
 
 def load_unperturbed_monolayer_genes_morans_i():
-    morans_i_unperturbed_df = pd.read_csv(os.path.join(WT_MONOLAYER_DIR, 'morans_i_wt_monolayer.csv'), index_col=0)
+    morans_i_unperturbed_df = pd.read_csv(os.path.join(UNPERTURBED_DIR, 'morans_i_wt_monolayer.csv'), index_col=0)
     return morans_i_unperturbed_df
 def load_unperturbed_monolayer_transcripts():
-    data = pd.read_csv(os.path.join(WT_MONOLAYER_DIR,'transcrips_20240925.csv'))
+    data = pd.read_csv(os.path.join(UNPERTURBED_DIR,'transcrips_20240925.csv'))
     return data
 
 def load_unperturbed_monolayer_gene_densities():
     with open(
-            os.path.join(WT_MONOLAYER_DIR,'wt_monolayer_gene_densities_new.pkl'),
+            os.path.join(UNPERTURBED_DIR,'wt_monolayer_gene_densities_new.pkl'),
             'rb') as f:
         result_dict = pickle.load(f)
     return result_dict
@@ -106,7 +106,7 @@ def save_to_pickle_monolayer_masking_components(xedges, yedges, binary_mask_clea
 
 
 def save_one_monolayer_masking_component_to_pickle(component, component_name):
-    save_path = os.path.join(WT_MONOLAYER_DIR, f'{component_name}.pkl')
+    save_path = os.path.join(EROSION_DIR, f'{component_name}.pkl')
     with open(fr'{save_path}','wb') as f:
         pickle.dump(component, f)
 
@@ -124,7 +124,7 @@ def load_erosion_components():
 
 
 def load_one_monolayer_masking_component_from_pickle(component_name):
-    load_path = os.path.join(WT_MONOLAYER_DIR, f'{component_name}.pkl')
+    load_path = os.path.join(EROSION_DIR, f'{component_name}.pkl')
     with open(
             fr'{load_path}','rb') as f:
         component = pickle.load(f)
@@ -132,25 +132,25 @@ def load_one_monolayer_masking_component_from_pickle(component_name):
 
 def load_transcript_densities_unperturbed_monolayer():
     with open(
-            os.path.join(WT_MONOLAYER_DIR, 'wt_monolayer_gene_densities_new.pkl'),
+            os.path.join(UNPERTURBED_DIR, 'wt_monolayer_gene_densities_new.pkl'),
             'rb') as f:
         result_dict = pickle.load(f)
     return result_dict
 def save_transcript_densities_unperturbed_monolayer(result_dict):
-    with open( os.path.join(WT_MONOLAYER_DIR, 'wt_monolayer_gene_densities_new.pkl'),
+    with open( os.path.join(UNPERTURBED_DIR, 'wt_monolayer_gene_densities_new.pkl'),
             'wb') as f:
         pickle.dump(result_dict, f)
 
 ### load sprinkled data by timepoint and roi
 def load_cell_by_gene_by_hr_and_roi(hr:str ,roi:str):
-    tmpt_dir = os.path.join(MULT_ROIS_DIR, hr)
+    tmpt_dir = os.path.join(SPRINKLED_DIR, hr)
     roi__dir = os.path.join(tmpt_dir, roi)
     cell_by_gene_path = os.path.join(roi__dir, 'cell_by_gene.csv')
     cell_by_gene = pd.read_csv(cell_by_gene_path, index_col=0)
     return cell_by_gene
 
 def load_cell_coordinates_by_hr_and_roi(hr:str, roi:str):
-    tmpt_dir = os.path.join(MULT_ROIS_DIR, hr)
+    tmpt_dir = os.path.join(SPRINKLED_DIR, hr)
     roi__dir = os.path.join(tmpt_dir, roi)
     cell_coords_path = os.path.join(roi__dir, 'cell_attributes.csv')
     cell_coords = pd.read_csv(cell_coords_path, index_col=0)
@@ -198,9 +198,21 @@ def get_tmpt_all_rois_adata(tmpt, num_neigh=5):
         adata_all_rois = adata_all_rois.concatenate(adata_one_roi, batch_key='rois',batch_categories=TMPT_TO_ROIS_DICT[tmpt][:i+2])
     return adata_all_rois
 
+def calculate_and_save_moransi_on_monolayer():
+    adata = get_unperturbed_monolayer_adata()
+    calculate_moransi_on_monolayer(adata, ORGANOID_GENE_NAMES_NOGFP, save=True, save_name='wt_monolayer')
+
+def calculate_moransi_on_monolayer(adata, gene_names,save=False, save_name=''):
+    Is, p_norms = novosparc.an.get_moran_pvals(adata[:,gene_names].X.values, adata.obsm[COORDINATES].values)
+    values = np.array([Is, p_norms, gene_names])
+    moransi_df = pd.DataFrame(values.T, columns=["Moran's I", 'p_norm', 'gene'])
+    if save:
+        moransi_df.to_csv(os.path.join(UNPERTURBED_DIR,f'morans_i_{save_name}.csv'))
+    return moransi_df
+
 #### in vivo data
 def load_TPM_LCM_intestine_atlas():
-    LCM_TPM_data = pd.read_csv(os.path.join(SHALEV_DATA_DIR, 'table_A_LCM_TPM_values.tsv'),
+    LCM_TPM_data = pd.read_csv(os.path.join(IN_VIVO_VILLUS_DIR, 'table_A_LCM_TPM_values.tsv'),
                 delimiter='\t')
     return LCM_TPM_data
 
@@ -209,7 +221,7 @@ def get_LCM_atlas_gene_subset(atlas, genes):
     return LCM_atlas_top_lndrmk,ordered_gene_list
 
 def load_invivo_reconstruction():
-    reconstruction = pd.read_csv(os.path.join(SHALEV_DATA_DIR, 'table_D_zonation_reconstruction.tsv'),
+    reconstruction = pd.read_csv(os.path.join(IN_VIVO_VILLUS_DIR, 'table_D_zonation_reconstruction.tsv'),
                                delimiter='\t', index_col=0)
     return reconstruction
 def preprocess_LCM_atlas_only_core_reference_genes(LCM_atlas ,genes_list):
@@ -259,4 +271,4 @@ def save_spatial_signal(adata, signal_name, save_name, sprinkled=False):
     signal_df['signal'] = np.array(adata.obs[signal_name])
     if sprinkled:
         signal_df['sprinkled'] = np.array(adata.obs['spc'])
-    signal_df.to_csv(os.path.join(WT_MONOLAYER_DIR, f'{save_name}.csv'))
+    signal_df.to_csv(os.path.join(UNPERTURBED_DIR, f'{save_name}.csv'))

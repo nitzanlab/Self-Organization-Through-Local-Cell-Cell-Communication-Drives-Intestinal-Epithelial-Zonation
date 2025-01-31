@@ -1,0 +1,10 @@
+pandas
+matplotlib
+anndata
+scanpy
+scipy
+numpy
+novosparc
+seaborn
+scikit-learn
+scikit-image
