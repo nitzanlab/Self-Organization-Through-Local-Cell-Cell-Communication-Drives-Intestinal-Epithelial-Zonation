@@ -11,22 +11,22 @@ def plot_all_neighborhood_zone_adoption_plots():
     plot_expected_cell_zones()
 
     ###panel c: expected zones in inserted cells, subregion of inserted monolayers
-    #plot_inserted_cells_expected_zones_spatially()
+    plot_inserted_cells_expected_zones_spatially()
 
     ###panel d: correlation in expected zone to neighbors
-    #plot_expected_zone_correlations(ORGANOID_GENE_NAMES_NOGFP, num_neigh=5)
+    plot_expected_zone_correlations(ORGANOID_GENE_NAMES_NOGFP, num_neigh=5)
 
-    #plot_expected_zone_correlations(ZONE_MAPPING_GENES, num_neigh=5)
+    plot_expected_zone_correlations(ZONE_MAPPING_GENES, num_neigh=5)
 
     ###panel e: expected zone distribution
-    #plot_inserted_cells_expected_zone_distribution()
+    plot_inserted_cells_expected_zone_distribution()
 
     ###panel f: inserted cells zone confusion
-    # plot_inserted_cells_zone_confusion_distribution('12hr')
-    # plot_inserted_cells_zone_confusion_distribution('72hr')
+    plot_inserted_cells_zone_confusion_distribution('12hr')
+    plot_inserted_cells_zone_confusion_distribution('72hr')
     #
     # ###panel g: gene contribution to zone confusion
-    #plot_zone_confusion_gene_contribution('72hr', genes=ZONE_MAPPING_GENES)
+    plot_zone_confusion_gene_contribution('72hr', genes=ZONE_MAPPING_GENES)
 
 
 def plot_zone_confusion_gene_contribution(tmpt, genes=ZONE_MAPPING_GENES):

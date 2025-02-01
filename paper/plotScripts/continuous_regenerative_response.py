@@ -29,7 +29,7 @@ def plot_all_continuous_regenerative_response_plots():
 
 
     ###panel g: regenerative expression neighborhood correlation
-    #calculate_regenerative_gene_expression_neighborhood_similarity(ALL_CELL_TYPE_GENES)
+    calculate_regenerative_gene_expression_neighborhood_similarity(ALL_CELL_TYPE_GENES)
 
 
 def plot_gene_expression_across_cell_types_spatially(gois,colors, x_region=UNPERTURBED_ZOOMED_IN_X, y_region=UNPERTURBED_ZOOMED_IN_Y, title=''):
