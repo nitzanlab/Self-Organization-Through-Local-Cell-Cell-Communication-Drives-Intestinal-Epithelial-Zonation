@@ -5,24 +5,19 @@ from paper.extractedData.load_csvs import *
 def plot_zonation_plasticity_plots(calculate = True):
     ###necessary calculations needed to perform, and save for analyses and plots
     if calculate:
-        calculate_unperturbed_monolayer_neighborhood_gene_expression_correlations(save=True)
-        calculate_unperturbed_monolayer_morans_i(save=True)
+        #calculate_unperturbed_monolayer_neighborhood_gene_expression_correlations(save=True)
+        calculate_and_save_moransi_on_monolayer(save=True)
 
     ###panel a: schematic diagram created in BioRender.com
     ###panel b and c: raw image example #TODO Yael
     ###panel d and e : ### correlation comparison #TODO Yael
 
     ###panel f: gene expression neighborhood correlation in inserted cells
-    #plot_gene_expression_neighborhood_correlation_in_inserted_cells()
     plot_gene_correlation_histograms_GFP_to_wt(len(ORGANOID_GENE_NAMES_NOGFP),'all_paneled_genes')
     plot_gene_correlation_histograms_GFP_to_wt(20,
                                             'top_20_moransi_genes')
 
     ###panel g: inserted cell neighborhood correlation across timepoints  #TODO Yael
-
-
-def calculate_unperturbed_monolayer_morans_i(save=True):
-    pass
 
 def calculate_unperturbed_monolayer_neighborhood_gene_expression_correlations(save=True):
     pass
@@ -38,7 +33,7 @@ def plot_gene_correlation_histograms_GFP_to_wt(num_genes, save_title):
     morans_i_wt = load_unperturbed_monolayer_genes_morans_i()
 
     #get the name of then genes with the highest moran's I in the unperturbed monolayer
-    top_n_moran_i_genes = np.array(morans_i_wt.sort_values(by='morans_i', ascending=False).head(num_genes).index)
+    top_n_moran_i_genes = np.array(morans_i_wt.sort_values(by="Moran's I", ascending=False)['gene'])[:num_genes]
 
     # get top n morans i genes index in from all non GFP gnes : ORGANOID_GENE_NAMES_NO_GFP
     moran_i_genes_idx = [np.where(ORGANOID_GENE_NAMES_NOGFP == item)[0][0] for item in top_n_moran_i_genes]

@@ -124,22 +124,29 @@ CELl_TYPEs_WO_REGENERATIVE = ['EEC','Tuft_cells','paneth_cells','goblet_cells','
 ##gene constants
 
 
-ORGANOID_GENE_NAMES = np.array(['Nupr1', 'Ahnak' ,'Lypd8', 'Ier3' ,'Pmepa1', 'Slc12a2', 'Apob' ,'Junb', 'Lyz1',
- 'Pigr', 'Anxa13','Mki67','Olfm4','S100g','Anxa10','Sis','Prxl2a','Basp1'
- 'Sqstm1','Txndc5','Sprr1a','Ccdc71l','Ppp1r1b','Rhoc','Atf5','Serpinb9b'
- 'Ccna2','Cdca7','Il1rn','Kcne3','Apoc2','Cryab','Clps','Plat','Tac1'
- 'Nlrp6','Sult6b2','Slc5a1','Gkn3','Egfr','Selenom','Klf4','Sptssb'
- 'Apoa4','Il18','Rnase1','Lgr5','Reg3g','Yap1','Hepacam2','Slc2a2','Insm1'
- 'Neurog3','Neurod1','Vim','Reg3b','Pcsk1','Rab3c','Pclo','Slc28a2','Cck'
- 'Msln','Fos','Tm4sf20','Anxa5','Clca3b','Plaur','Hook1','Pycard','Pclaf'
- 'Ccn2','Aldh1b1','Gstm3','Zfp36l2','Fcgbp','Jaml','Cps1','Smim24','Ndrg1'
- 'Ccl25','Chga','Smoc2','Btc','Tuba1a','Apoa1','Adh6a','Alpi','S100a7a'
- 'Clca1','Cavin3','Rgcc','Mal','Add3','Muc2','Axin2','Myb','Sct','Cyp2c29'
- 'Ly6d','Lor','Slc7a7','Mmp7','Tph1','H4c9','Gstt1','Guca2a','Cpe'
- 'Apobec1','Ada','Slc7a9','Scg2','Npc1l1','Slc2a5','Nt5e','Reg3a','Slc7a8'
- 'Dclk1','Slc15a1','Ang4','Gstm1','Ly6a','Rps23','Itln1','Reg1','Agr2'
- 'Tff3','Prap1','Spink4','Rbp2','Zg16','Fabp1','Reg4','Tm4sf4','Anxa1'
- 'Lgals3','F3','Clu','Chgb','Aldob'])
+ORGANOID_GENE_NAMES = np.array([
+    "Nupr1", "Ahnak", "Lypd8", "Ier3", "Pmepa1", "Slc12a2", "Apob",
+    "Junb", "Lyz1", "Pigr", "Anxa13", "Mki67", "Olfm4", "S100g",
+    "Anxa10", "Sis", "Prxl2a", "Basp1", "Sqstm1", "Txndc5", "Sprr1a",
+    "Ccdc71l", "Ppp1r1b", "Rhoc", "Atf5", "Serpinb9b", "Ccna2", "Cdca7",
+    "Il1rn", "Kcne3", "Apoc2", "Cryab", "Clps", "Plat", "Tac1", "Nlrp6",
+    "Sult6b2", "Slc5a1", "Gkn3", "Egfr", "Selenom", "Klf4", "Sptssb",
+    "Apoa4", "Il18", "Rnase1", "Lgr5", "Reg3g", "Yap1", "Hepacam2",
+    "Slc2a2", "Insm1", "Neurog3", "Neurod1", "Vim", "Reg3b", "Pcsk1",
+    "Rab3c", "Pclo", "Slc28a2", "Cck", "Msln", "Fos", "Tm4sf20", "Anxa5",
+    "Clca3b", "Plaur", "Hook1", "Pycard", "Pclaf", "Ccn2", "Aldh1b1",
+    "Gstm3", "Zfp36l2", "Fcgbp", "Jaml", "Cps1", "Smim24", "Ndrg1",
+    "Ccl25", "Chga", "Smoc2", "Btc", "Tuba1a", "Apoa1", "Adh6a", "Alpi",
+    "S100a7a", "Clca1", "Cavin3", "Rgcc", "Mal", "Add3", "Muc2", "Axin2",
+    "Myb", "Sct", "Cyp2c29", "Ly6d", "Lor", "Slc7a7", "Mmp7", "Tph1",
+    "H4c9", "Gstt1", "Guca2a", "Cpe", "Apobec1", "Ada", "Slc7a9", "Scg2",
+    "Npc1l1", "Slc2a5", "Nt5e", "Reg3a", "Slc7a8", "Dclk1", "Slc15a1",
+    "Ang4", "Gstm1", "Ly6a", "Rps23", "Itln1", "Reg1", "Agr2", "Tff3",
+    "Prap1", "Spink4", "Rbp2", "Zg16", "Fabp1", "Reg4", "Tm4sf4",
+    "Anxa1", "Lgals3", "F3", "Clu", "Chgb", "Aldob", "GFP"])
+
+
+
 
 ORGANOID_GENE_NAMES_NOGFP = ORGANOID_GENE_NAMES[ORGANOID_GENE_NAMES !='GFP']
 

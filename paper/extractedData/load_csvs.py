@@ -7,13 +7,13 @@ from utils.constant import *
 ####Unperturbed Monolayer Data Loader #####
 
 def load_unperturbed_intestinal_organoid_cell_by_gene_mat():
-    cell_by_gene_file_path = os.path.join(UNPERTURBED_DIR, 'cell_by_gene_cluster_annotations.csv')
+    cell_by_gene_file_path = os.path.join(UNPERTURBED_DIR, 'cell_by_gene_mat.csv')
     #cell_by_gene_file_path = os.path.join(DATA_DIR,'cell_by_gene_mat.csv')
 
     # Load CSV file into a Pandas DataFrame
     cell_by_gene_data_organoid = pd.read_csv(cell_by_gene_file_path)
 
-    cell_by_gene_data_organoid = cell_by_gene_data_organoid.sort_values(by='object_id', ascending=True)
+    #cell_by_gene_data_organoid = cell_by_gene_data_organoid.sort_values(by='object_id', ascending=True)
 
     #cell_by_gene_data_organoid = cell_by_gene_data_organoid.sort_values(by='Unnamed: 0', ascending=True)
     cell_by_gene_data_organoid.drop('Unnamed: 0', axis=1, inplace=True)
@@ -26,7 +26,8 @@ def load_unperturbed_cell_coords():
     return coordinates_data
 
 def get_unperturbed_monolayer_adata(num_neigh=5):
-    cell_by_gene = load_unperturbed_intestinal_organoid_cell_by_gene_mat()[ORGANOID_GENE_NAMES_NOGFP]
+    cell_by_gene = load_unperturbed_intestinal_organoid_cell_by_gene_mat()#[ORGANOID_GENE_NAMES_NOGFP]
+    print(cell_by_gene.columns)
     adata = ad.AnnData(X=cell_by_gene)
     cell_coords = load_unperturbed_cell_coords()
     sc.pp.normalize_total(adata)
@@ -194,12 +195,12 @@ def get_tmpt_all_rois_adata(tmpt, num_neigh=5):
         adata_all_rois = adata_all_rois.concatenate(adata_one_roi, batch_key='rois',batch_categories=TMPT_TO_ROIS_DICT[tmpt][:i+2])
     return adata_all_rois
 
-def calculate_and_save_moransi_on_monolayer():
+def calculate_and_save_moransi_on_monolayer(save=True):
     adata = get_unperturbed_monolayer_adata()
-    calculate_moransi_on_monolayer(adata, ORGANOID_GENE_NAMES_NOGFP, save=True, save_name='wt_monolayer')
+    calculate_moransi_on_monolayer(adata, ORGANOID_GENE_NAMES_NOGFP, save=save, save_name='wt_monolayer')
 
 def calculate_moransi_on_monolayer(adata, gene_names,save=False, save_name=''):
-    Is, p_norms = novosparc.an.get_moran_pvals(adata[:,gene_names].X.values, adata.obsm[COORDINATES].values)
+    Is, p_norms = novosparc.an.get_moran_pvals(adata[:,gene_names].X, adata.obsm[COORDINATES].values)
     values = np.array([Is, p_norms, gene_names])
     moransi_df = pd.DataFrame(values.T, columns=["Moran's I", 'p_norm', 'gene'])
     if save:
