@@ -21,7 +21,7 @@ def calculate_eroded_transcription_densities(plot_erosion=True, save_components=
         binary_mask=binary_mask_cleaned,
         erosion_step=5,
         num_iterations=30,
-        data=data[data['name'] == 'Nupr1'],
+        data=data[data['name'] != 'GFP'],
         xedges=xedges,
         yedges=yedges,
         xy_spacing=XY_SPACING, save=save_components)

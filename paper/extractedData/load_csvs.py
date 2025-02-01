@@ -48,7 +48,7 @@ def load_unperturbed_monolayer_transcripts():
 
 def load_unperturbed_monolayer_gene_densities():
     with open(
-            os.path.join(UNPERTURBED_DIR,'wt_monolayer_gene_densities_new.pkl'),
+            os.path.join(EROSION_DIR,'wt_monolayer_gene_densities_new.pkl'),
             'rb') as f:
         result_dict = pickle.load(f)
     return result_dict
@@ -60,11 +60,7 @@ def map_monolayer_to_transcript_density_profiles(adata, genes, begin=3, end=14, 
     if binned:
         binned_df = transcript_df.groupby(np.arange(len(transcript_df)) // 2).mean()
         transcript_df = (binned_df - binned_df.min()) / (binned_df.max() - binned_df.min())
-    # sns.heatmap(transcript_df.T)
-    # plt.title('transcript')
-    # plt.show()
-    #adata = adata[adata[:, genes].X.sum(axis=1) > 1e-1]
-    #adata_subset = adata[:, genes_in_monolayer].copy()
+
     adata_X = adata.X.copy()
 
     # Perform min-max scaling for each gene (column)
@@ -131,13 +127,13 @@ def load_one_monolayer_masking_component_from_pickle(component_name):
     return component
 
 def load_transcript_densities_unperturbed_monolayer():
-    with open(
-            os.path.join(UNPERTURBED_DIR, 'wt_monolayer_gene_densities_new.pkl'),
+    with open(os.path.join(EROSION_DIR, 'wt_monolayer_gene_densities_new.pkl'),
             'rb') as f:
         result_dict = pickle.load(f)
     return result_dict
+
 def save_transcript_densities_unperturbed_monolayer(result_dict):
-    with open( os.path.join(UNPERTURBED_DIR, 'wt_monolayer_gene_densities_new.pkl'),
+    with open(os.path.join(EROSION_DIR, 'wt_monolayer_gene_densities_new.pkl'),
             'wb') as f:
         pickle.dump(result_dict, f)
 
