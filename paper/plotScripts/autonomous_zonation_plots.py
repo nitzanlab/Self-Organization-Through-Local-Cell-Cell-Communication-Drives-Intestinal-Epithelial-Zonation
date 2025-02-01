@@ -34,7 +34,7 @@ def plot_all_autonomous_figure_plots(saved_datasets=False):
     else:
          result_dict = calculate_eroded_transcription_densities(plot_erosion=True, save_components=True)
     ###panel g: erosion expression profiles
-    plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True, normalize=True)
+    #plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True, normalize=True)
     #panel h: heatmap comparison in vivo reconstruction to monolayer, erosion measured expression from edge to interior
     expression_profile_heatmap_comparison_invivo_gene_density(genes_in_order_density_measure)
 
@@ -76,6 +76,7 @@ def plot_gene_groups_expression_on_wt_monolayer(gene_group1:list, gene_group2:li
         file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, f'{gene_group1}_{gene_group2}_spatial_expression.pdf')
         plt.savefig(file_name, format='pdf')
     plt.show()
+    plt.close()
 
 def expression_profile_heatmap_comparison_invivo_gene_density(gene_set):
     reconstruction = mean_gene_exp_per_zone_in_invivo_reconstruction_no_crypt()
@@ -108,6 +109,7 @@ def expression_profile_heatmap_comparison_invivo_gene_density(gene_set):
     file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, 'monolayer_transcript_density_expression_heatmap.pdf')
     plt.savefig(file_name, format='pdf')
     plt.show()
+    plt.close()
 
     # sns.heatmap(invivo_exp_normalized.T, vmin=0, vmax=1, cmap='plasma')
     # plt.title(r"$\it{In\ Vivo}$ Expression Profiles")
@@ -131,6 +133,7 @@ def expression_profile_heatmap_comparison_invivo_gene_density(gene_set):
     file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, 'invivo_reconstruction_expression_heatmap.pdf')
     plt.savefig(file_name, format='pdf')
     plt.show()
+    plt.close()
 
 def mean_gene_exp_per_zone_in_invivo_reconstruction_no_crypt():
     reconstruction = load_invivo_reconstruction()

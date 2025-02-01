@@ -92,60 +92,7 @@ def plot_gene_expression_across_cell_types_spatially(gois,colors, x_region=UNPER
         file_name = os.path.join(CONTINUOUS_REGENERATIVE_RESPONSE_PLOTS_FOLDER_PATH, f'{goi}_spatial_expression.pdf')
         plt.savefig(file_name, format='pdf')
         plt.show()
-
-# def plot_gene_expression_across_cell_types_spatially(goi, x_region=UNPERTURBED_ZOOMED_IN_X, y_region=UNPERTURBED_ZOOMED_IN_Y, title='', color='Oranges'):
-#     cell_by_gene = load_unperturbed_intestinal_organoid_cell_by_gene_mat()
-#     cell_by_gene_normed = normalize_cell_by_gene_by_cells_then_genes(cell_by_gene, ORGANOID_GENE_NAMES_NOGFP)
-#     cell_coords = load_unperturbed_cell_coords()
-#     clusters_df = pd.read_csv(os.path.join(DATA_DIR, 'cell_by_gene_cluster_annotations.csv'))
-#     clusters = clusters_df.sort_values(by='object_id', ascending=True)['cluster_id']
-#     #pinks_colormap = LinearSegmentedColormap.from_list("pinks", ["#ffd1dc", "#ff69b4", "#ff1493", "#c71585"])
-#
-#     # Edge color customization for clusters 4 and 5
-#     edge_colors = [
-#         "#FFD700" if cluster == 4 else "#FF4500" if cluster == 5 else 'none'  # Gold for cluster 4, vibrant orange-red for cluster 5
-#         for cluster in clusters
-#     ]
-#     scatter = plt.scatter(
-#         cell_coords['center_x'], cell_coords['center_y'],
-#         c=cell_by_gene_normed[goi], cmap=color, s=20,
-#         edgecolors=edge_colors  # Apply edge color only for clusters 4 and 5
-#     )
-#
-#     # Add color bar for expression values
-#     cbar = plt.colorbar(scatter)
-#     cbar.set_label(f'{goi} expression levels')
-#
-#     # Cluster information for the legend
-#     cluster_dict = {
-#         0: 'regenerative', 1: 'regenerative', 2: 'regenerative', 3: 'enterocyte',
-#         4: 'secretory', 5: 'progenitor', 6: 'regenerative', 7: 'unknown'
-#     }
-#
-#     # Manually add legend for clusters 4 and 5 with distinct colors
-#     legend_labels = [
-#         plt.Line2D([0], [0], marker='o', color='w', markerfacecolor="#FFD700", markersize=10,
-#                    label='secretory'),
-#         plt.Line2D([0], [0], marker='o', color='w', markerfacecolor="#FF4500", markersize=10,
-#                    label='progenitor')
-#     ]
-#
-#     plt.legend(handles=legend_labels, title='Clusters', loc='upper left', fontsize='small', title_fontsize='medium')
-#
-#     # Set axis limits, labels, and other plot properties
-#     plt.xlim(x_region)
-#     plt.ylim(y_region)
-#     plt.xlabel('X')
-#     plt.ylabel('Y')
-#     plt.xticks([])
-#     plt.yticks([])
-#     plt.title(f'{goi} expression in tissue wt {title}')
-#     plt.gca().invert_yaxis()
-#     # Save the plot
-#     os.makedirs(CONTINUOUS_REGENERATIVE_RESPONSE_PLOTS_FOLDER_PATH, exist_ok=True)
-#     file_name = os.path.join(CONTINUOUS_REGENERATIVE_RESPONSE_PLOTS_FOLDER_PATH, f'{goi}_spatial_expression.pdf')
-#     plt.savefig(file_name, format='pdf')
-#     plt.show()
+        plt.close()
 
 
 
@@ -228,3 +175,4 @@ def plot_regenerative_neighboring_expression_correlation(all_cell_types_corrs):
     file_name = os.path.join(CONTINUOUS_REGENERATIVE_RESPONSE_PLOTS_FOLDER_PATH, f'regenerative_expression_across_cell_types.pdf')
     plt.savefig(file_name, format='pdf')
     plt.show()
+    plt.close()

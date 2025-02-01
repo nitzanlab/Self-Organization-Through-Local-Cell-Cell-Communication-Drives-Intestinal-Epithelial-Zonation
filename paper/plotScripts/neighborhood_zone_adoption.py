@@ -74,6 +74,7 @@ def plot_zone_confusion_gene_contribution(tmpt, genes=ZONE_MAPPING_GENES):
     file_name = os.path.join(NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH, 'gene_zone_contribution.pdf')
     plt.savefig(file_name, format='pdf')
     plt.show()
+    plt.close()
 
 
 def calculate_gene_zone_confusion_contribution(tmpt, genes, begin, end, is_sprinkled, entropy_range, num_cells=10):
@@ -236,6 +237,7 @@ def plot_expected_zone_correlations(genes, num_neigh):
     file_name = os.path.join(NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH, 'zone_neighborhood_correlation_bar_plot.pdf')
     plt.savefig(file_name, format='pdf')
     plt.show()
+    plt.close()
 
 def get_neighbor_corrs(tmpt, roi, genes, num_neigh, radius=500):
     adata = load_sprinkled_adata_hr_tmpt(tmpt, roi)
@@ -302,6 +304,7 @@ def expected_zone_distribution(tmpt, genes, begin, end):
     file_name = os.path.join(NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH, f'expected_zone_distribution_{tmpt}.pdf')
     plt.savefig(file_name, format='pdf',bbox_inches='tight')
     plt.show()
+    plt.close()
 
 def get_transcript_density_entropy(adata):
     """
@@ -353,6 +356,7 @@ def plot_inserted_cells_zone_confusion_distribution(tmpt):
     plt.savefig(file_name, format='pdf', bbox_inches='tight')
     plt.tight_layout()
     plt.show()
+    plt.close()
     stat, p_value = ks_2samp(adata_gfp.obs['transcript_exp_pos'], adata_non_gfp.obs['transcript_exp_pos'])
     print(f"KS Statistic: {stat}, p-value: {p_value} {tmpt}")
 
@@ -408,6 +412,7 @@ def plot_GFP_adata_signal_spatially(adata, signal_name, adata_type, zoned=False,
     plt.xticks([])
     plt.yticks([])
     plt.show()
+    plt.close()
 
 
 ##mapping based on the in vivo expression profiles

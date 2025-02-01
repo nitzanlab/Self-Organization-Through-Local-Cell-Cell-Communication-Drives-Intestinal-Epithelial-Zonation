@@ -171,6 +171,7 @@ def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings
         plt.ylabel('y')
         plt.gca().set_aspect('equal', adjustable='box')
         plt.show()
+        plt.close()
 
     print(avg_ring_widths)
     arr_avg = np.array(avg_ring_widths)
@@ -259,6 +260,7 @@ def plot_binary_mask_cleaned(binary_mask_cleaned,extent):
     plt.xlabel('x')
     plt.ylabel('y')
     plt.show()
+    plt.close()
 
 def check_mask_fidelity(data, binary_mask_cleaned, extent):
     """
@@ -276,6 +278,7 @@ def check_mask_fidelity(data, binary_mask_cleaned, extent):
     plt.ylabel('y')
     plt.gca().set_aspect('equal', adjustable='box')
     plt.show()
+    plt.close()
 
 
 def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, num_iterations=30, plot_rings=True,
@@ -338,6 +341,7 @@ def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, 
     os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
     plt.savefig(file_name, format='pdf', bbox_inches='tight')
     plt.show()
+    plt.close()
 
 def compute_transcript_density_in_rings(gene_name, binary_mask, erosion_step, num_iterations, data, xedges, yedges,
                                         plot_rings=True):
@@ -449,6 +453,7 @@ def compute_transcript_density_in_rings(gene_name, binary_mask, erosion_step, nu
         plt.ylabel('y')
         plt.gca().set_aspect('equal', adjustable='box')
         plt.show()
+        plt.close()
     print(avg_ring_widths)
     print(np.mean(avg_ring_widths))
     return np.array(avg_ring_widths), densities, areas, counts
@@ -616,6 +621,7 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
         file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, 'monolayer_zonation_expression_profiles.pdf')
         plt.savefig(file_name, format='pdf')
         plt.show()
+        plt.close()
     else:
         # Plot all genes on the same plot
         plt.figure(figsize=(12, 8))
@@ -642,8 +648,8 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
         plt.ylabel('Normalized Density' if normalize else 'Density (transcripts per unit area)', fontsize=24)
         plt.grid(True)
         plt.legend()
-
         plt.show()
+        plt.close()
 
 def plot_unperturbed_monolayer_gene_density_to_invivo_comparisons():
     """
@@ -674,6 +680,7 @@ def plot_unperturbed_monolayer_gene_density_to_invivo_comparisons():
         plt.title(f'{gene} invivo to enteroid monolayer expression profile comparison')
         plt.savefig(os.path.join(save_path, f'{gene}_invivo_monolayer_comparison.pdf'),bbox_inches='tight')
         #plt.show()
+        plt.close()
 
 def apply_savgol(column):
     return savgol_filter(column, window_length=15, polyorder=3)
