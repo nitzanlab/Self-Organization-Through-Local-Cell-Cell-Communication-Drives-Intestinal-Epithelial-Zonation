@@ -32,4 +32,11 @@ This is the repo of the code containing the necessary functions to reproduce the
 4. change the directory path for HOME_DIR in utils/constants.py to where you have saved these directories in the format explained above 
 5. download packages using the requirements.txt file found in utils subdirectory
 6. under paper/plotScripts exists the python file plotALL.py includes a function plot_all_figures() , call and run it in main.py 
+7. the plots shown in the figures will be saved to paper/graphs/
+to four different directions
+    a. autonomous_zonation_figure_plots
+    b. zonation_plasticity_plots
+    c. neighborhood_zone_adoption_plots
+    d. continuous_regenerative_figure_plots
+
 """
