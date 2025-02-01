@@ -25,6 +25,7 @@ in order to load the data properly and be able to conduct the analyses and repro
        --roi3
        --roi4
  ---- unperturbed
+        --- monolayer_erosion
 4. change the directory path for HOME_DIR to where you have saved these directories in the format explained above 
 """
 
