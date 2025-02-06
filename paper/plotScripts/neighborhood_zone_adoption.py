@@ -8,25 +8,25 @@ from paper.extractedData.load_csvs import *
 def plot_all_neighborhood_zone_adoption_plots():
     ###panel a: schematic diagram created in  https://BioRender.com
     ###panel b: expected cell zones in unperturbed monolayer
-    plot_expected_cell_zones()
+    #plot_expected_cell_zones()
 
     ###panel c: expected zones in inserted cells, subregion of inserted monolayers
     plot_inserted_cells_expected_zones_spatially()
 
     ###panel d: correlation in expected zone to neighbors
-    plot_expected_zone_correlations(ORGANOID_GENE_NAMES_NOGFP, num_neigh=5)
+    #plot_expected_zone_correlations(ORGANOID_GENE_NAMES_NOGFP, num_neigh=5)
 
-    plot_expected_zone_correlations(ZONE_MAPPING_GENES, num_neigh=5)
+    #plot_expected_zone_correlations(ZONE_MAPPING_GENES, num_neigh=5)
 
     ###panel e: expected zone distribution
-    plot_inserted_cells_expected_zone_distribution()
-
-    ###panel f: inserted cells zone confusion
-    plot_inserted_cells_zone_confusion_distribution('12hr')
-    plot_inserted_cells_zone_confusion_distribution('72hr')
+    # plot_inserted_cells_expected_zone_distribution()
     #
-    # ###panel g: gene contribution to zone confusion
-    plot_zone_confusion_gene_contribution('72hr', genes=ZONE_MAPPING_GENES)
+    # ###panel f: inserted cells zone confusion
+    # plot_inserted_cells_zone_confusion_distribution('12hr')
+    # plot_inserted_cells_zone_confusion_distribution('72hr')
+    # #
+    # # ###panel g: gene contribution to zone confusion
+    # plot_zone_confusion_gene_contribution('72hr', genes=ZONE_MAPPING_GENES)
 
 
 def plot_zone_confusion_gene_contribution(tmpt, genes=ZONE_MAPPING_GENES):
@@ -395,7 +395,7 @@ def plot_GFP_adata_signal_spatially(adata, signal_name, adata_type, zoned=False,
                           adata.obsm[COORDINATES][Y_COORDINATES] > y_range[0]) & (
                           adata.obsm[COORDINATES][Y_COORDINATES] < y_range[1])
         adata = adata[aoi]
-        save_spatial_signal(adata, signal_name, f'zoom_in_{title}')
+        save_spatial_signal(adata, signal_name, f'zoom_in_{title}', sprinkled=True)
 
 
     vmin = min(adata_spc.obs[signal_name].min(), adata_non_spc.obs[signal_name].min())

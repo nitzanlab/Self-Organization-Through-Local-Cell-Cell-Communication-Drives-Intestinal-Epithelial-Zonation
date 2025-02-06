@@ -17,6 +17,8 @@ import seaborn as sns
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import pearsonr
 
+import matplotlib.patches as mpatches
+
 import glob
 from scipy.signal import convolve2d
 from scipy.spatial import cKDTree

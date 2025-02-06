@@ -36,7 +36,7 @@ def plot_all_autonomous_figure_plots(saved_datasets=False):
     ###panel g: erosion expression profiles
     #plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True, normalize=True)
     #panel h: heatmap comparison in vivo reconstruction to monolayer, erosion measured expression from edge to interior
-    expression_profile_heatmap_comparison_invivo_gene_density(genes_in_order_density_measure)
+    #expression_profile_heatmap_comparison_invivo_gene_density(genes_in_order_density_measure)
 
 def plot_gene_groups_expression_on_wt_monolayer(gene_group1:list, gene_group2:list, group1_name:str, group2_name:str,zoned=False,zone_x=None, zone_y=None, save=False):
     """
@@ -97,12 +97,13 @@ def expression_profile_heatmap_comparison_invivo_gene_density(gene_set):
     colorbar = transcript_heatmap.collections[0].colorbar
     colorbar.set_label('Normalized Gene Expression')
     avg_iteration_width = load_iteration_average_width()
-    dist_to_edge = np.round(np.arange(4, 4+gene_density_df.shape[0]) * avg_iteration_width, 2)
+    dist_to_edge = np.round(np.arange(4, 4+gene_density_df.shape[0]) * avg_iteration_width, 0).astype(int)
     plt.xticks(np.arange(gene_density_df.shape[0]), dist_to_edge)
     plt.xlabel('Distance to Monolayer Edge(μm)')
     plt.xticks(rotation=45)
     plt.ylabel('Genes')
     plt.yticks()
+    plt.yticks(rotation=0)
     plt.title('Transcript Density Profiles')
     plt.tight_layout()
     os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
@@ -126,7 +127,7 @@ def expression_profile_heatmap_comparison_invivo_gene_density(gene_set):
     plt.xlabel('Villus Top to Bottom')
     plt.xticks(rotation=0)
     plt.ylabel('Genes')
-    plt.yticks()
+    plt.yticks(rotation=0)
     plt.title(r"$\it{In\ Vivo}$ Expression Profiles Reconstructed")
     plt.tight_layout()
     os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)

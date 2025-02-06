@@ -1,3 +1,5 @@
+import numpy as np
+
 from paper.extractedData.load_csvs import *
 from utils.imports import *
 def calculate_eroded_transcription_densities(plot_erosion=True, save_components=True):
@@ -288,47 +290,88 @@ def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, 
     for ring_mask, ring_color in zip(ring_masks, color_per_ring):
         density_image[ring_mask] += ring_color
     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-
+    fig, ax = plt.subplots(figsize=(8, 8))
     if image_x_range is not None:
         density_image = density_image[image_x_range[0]:image_x_range[1], image_y_range[0]:image_y_range[1]]
+
         extent = [xedges[image_x_range[0]], xedges[image_x_range[1]], yedges[image_y_range[0]],
                   yedges[image_y_range[1]]]
         binary_mask = binary_mask[image_x_range[0]:image_x_range[1], image_y_range[0]:image_y_range[1]]
+        # min_x =10
+        # min_y = 700
+        min_x = extent[0]  # Use updated extent for zoomed-in case
+        min_y = extent[2]
+
+
+    else:
+        min_x = 1000
+        min_y = 3000
 
     # Create figure and axis
-    fig, ax = plt.subplots(figsize=(8, 8))
+
     cmap = plt.get_cmap('hsv', len(ring_masks))
     cmap.set_under('white')
     background_image = np.where(binary_mask, 0.5, 1.0)
-    ax.imshow(np.where(binary_mask, 0.5, 1.0), extent=extent, origin='lower', cmap='gray', aspect='auto', vmin=0,
+    flipped_image = np.flipud(np.where(binary_mask, 0.5, 1.0))
+    ax.imshow(flipped_image, extent=extent, origin='lower', cmap='gray', aspect='auto', vmin=0,
               vmax=1)
-    img = ax.imshow(density_image, extent=extent, origin='lower', cmap=cmap, aspect='auto', vmin=0.01, alpha=0.8)
+    flipped_density_image = np.flipud(density_image)
+    img = ax.imshow(flipped_density_image, extent=extent, origin='lower', cmap=cmap, aspect='auto', vmin=0.01, alpha=0.8)
 
     # Titles and labels
     ax.set_title('Transcripts Density Rings', fontsize=14)
     ax.set_xlabel('x', fontsize=12)
     ax.set_ylabel('y', fontsize=12)
 
+    legend_patches = [mpatches.Patch(color=cmap(i / len(ring_masks)), label=f'Ring {i}') for i in range(len(ring_masks))]
+
+    legend_patches.append(mpatches.Patch(color='grey', label='Monolayer'))
+
+    plt.legend(handles=legend_patches, title="Ring Colors", loc='center left', bbox_to_anchor=(1, 0.5), borderaxespad=0, fontsize=12)
+
     # Add scale bar manually
 
-    scale_bar_length = 100  # Scale bar length in micrometers
-    pixel_size = 107.11*100 # Pixel size in nanometers
-    scale_bar_length_nm = scale_bar_length *(1000) #1000 for nanometer, but everything is ten times larger in each axis than a pixel already
-    scale_bar_length_pixels = scale_bar_length_nm / pixel_size  # Convert to pixels
+    # scale_bar_length = 100  # Scale bar length in micrometers
+    # pixel_size = 107.11 # Pixel size in nanometers
+    # scale_bar_length_nm = scale_bar_length *(1000) #1000 for nanometer, but everything is ten times larger in each axis than a pixel already
+    # scale_bar_length_pixels = scale_bar_length_nm / pixel_size  # Convert to pixels
+    #
+    # # Position the scale bar
+    # scale_bar_x_start = 0.1  # Fraction of the width from the left
+    # scale_bar_y_pos = 0.05  # Fraction of the height from the bottom
+    # bar_start_x = extent[0] + scale_bar_x_start * (extent[1] - extent[0])
+    # bar_end_x = bar_start_x + scale_bar_length_pixels * (extent[1] - extent[0]) / density_image.shape[1]
+    # bar_y = extent[2] + scale_bar_y_pos * (extent[3] - extent[2])
+    #
+    # # Plot scale bar
+    # ax.plot([bar_start_x, bar_end_x], [bar_y, bar_y], color='black', linewidth=3, solid_capstyle='butt')
+    #
+    #     # Add scale bar label
+    # ax.text((bar_start_x + bar_end_x) / 2, bar_y - 0.02 * (extent[3] - extent[2]),
+    #         f'{scale_bar_length} µm', color='black', fontsize=12, ha='center', va='top')
+    scale_bar_length_um = 100
+    pixel_size_nm = 107.11  # Pixel size in nanometersscale_bar_length_um = 100
+    scale_bar_length_px = int(scale_bar_length_um * 1000.0 / pixel_size_nm)  # px
+    # 8) Decide where "bottom-left" is visually.
+    #    Because we inverted the y-axis:
+    #       - left = min_x
+    #       - bottom = max_y
+    #    We'll offset by some margin from these edges.
+    offset_x = 100
+    offset_y = 100
 
-    # Position the scale bar
-    scale_bar_x_start = 0.1  # Fraction of the width from the left
-    scale_bar_y_pos = 0.05  # Fraction of the height from the bottom
-    bar_start_x = extent[0] + scale_bar_x_start * (extent[1] - extent[0])
-    bar_end_x = bar_start_x + scale_bar_length_pixels * (extent[1] - extent[0]) / density_image.shape[1]
-    bar_y = extent[2] + scale_bar_y_pos * (extent[3] - extent[2])
+    scale_bar_height = 200 #scale_bar_length_px / 4.665
+    scale_bar_color = 'black'
+    bar_left = min_x + offset_x
+    # For the bottom-left visually, place the rectangle's "bottom" near max_y minus offset_y:
+    bar_bottom = min_y - offset_y - scale_bar_height
+    # 9) Place the scale bar rectangle
+    rect = plt.Rectangle((extent[0] + 100, extent[2] + 100),  # Bottom-left corner
+                         scale_bar_length_px,  # Width
+                         200,  # Height
+                         color='black', lw=0)
+    ax.add_patch(rect)
 
-    # Plot scale bar
-    ax.plot([bar_start_x, bar_end_x], [bar_y, bar_y], color='black', linewidth=3, solid_capstyle='butt')
-
-        # Add scale bar label
-    ax.text((bar_start_x + bar_end_x) / 2, bar_y - 0.02 * (extent[3] - extent[2]),
-            f'{scale_bar_length} µm', color='black', fontsize=12, ha='center', va='top')
 
     if image_x_range is not None:
         file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH,
@@ -338,6 +381,7 @@ def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, 
                                  'erosion_rings_zoom_in.pdf' if image_x_range else 'erosion_rings_full_monolayer.pdf')
     # Remove axis ticks and save
     ax.axis('off')
+    plt.tight_layout()
     os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
     plt.savefig(file_name, format='pdf', bbox_inches='tight')
     plt.show()
@@ -586,11 +630,11 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
     if spread_plots:
         # Create stacked subplots with shared X-axis
         num_genes = len(gene_names)
-        fig, axs = plt.subplots(num_genes, 1, sharex=True,figsize=(10, 4 * num_genes))
+        fig, axs = plt.subplots(num_genes, 1, sharex=True,figsize=(9, 2.5*num_genes))
 
         if num_genes == 1:
             axs = [axs]  # Ensure axs is a list even if there is only one subplot
-
+        yticks = [0,0.5,1]
         for idx,(ax, gene_name) in enumerate(zip(axs, gene_names)):
             if gene_name in result_dict:
                 densities = (result_dict[gene_name]['densities'])[:-10] #before [::-1] inside
@@ -603,19 +647,23 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
                             densities = [0] * len(densities)
                     iterations = np.arange(1, len(densities) + 1)
                     ax.plot(iterations, densities, marker='o', label=gene_name, linewidth=5)
-                    ax.set_ylabel('Normalized Density' if normalize else 'Density', fontsize=20)
+                    ax.set_ylabel('Normalized\n Density' if normalize else 'Density',fontsize=20)
+                    ax.set_yticks(yticks,yticks)
+                    ax.tick_params(axis="y", labelsize=20)
+
                     ax.grid(True)
                     if idx == 0:
                         ax.set_title('Density Profiles of Genes in Successive Rings',fontsize=20)
-                    ax.legend(loc = 'upper left', fontsize=20)
+                    ax.legend(loc = 'lower right',fontsize=24)
                 else:
                     print(f"No density data available for gene '{gene_name}'.")
             else:
                 print(f"Gene '{gene_name}' not found in the results.")
-        axs[-1].set_xlabel('Distance to Monolayer Edge (μm)', fontsize=20)
+        axs[-1].set_xlabel('Distance to Monolayer Edge (μm)',fontsize=20)
         avg_iteration_width = load_iteration_average_width()
-        dist_to_edge = np.round(np.arange(1, len(densities) + 1) * avg_iteration_width, 2)
-        axs[-1].set_xticks(np.arange(1, len(densities) + 1),dist_to_edge)
+        dist_to_edge = np.round(np.arange(1, len(densities) + 1) * avg_iteration_width).astype(int)
+        axs[-1].set_xticks(np.arange(1, len(densities) + 1),dist_to_edge, rotation=45, fontsize=20)
+        #axs[-1].set_yticks(np.arange(0,1.05,0.1),np.arange(0,1.05,0.1),fontsize=20)
         plt.tight_layout()
         os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
         file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, 'monolayer_zonation_expression_profiles.pdf')
@@ -644,8 +692,8 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
                 print(f"Gene '{gene_name}' not found in the results.")
         plt.title('Density Profiles of Genes in Successive Rings')
         plt.xlabel('Distance to Monolayer Edge (μm)')
-        plt.xticks(fontsize=20)
-        plt.ylabel('Normalized Density' if normalize else 'Density (transcripts per unit area)', fontsize=24)
+        plt.xticks()
+        plt.ylabel('Normalized Density' if normalize else 'Density (transcripts per unit area)',fontsize=20)
         plt.grid(True)
         plt.legend()
         plt.show()

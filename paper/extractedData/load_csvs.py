@@ -34,6 +34,7 @@ def get_unperturbed_monolayer_adata(num_neigh=5):
     adata.var_names = cell_by_gene.columns
     cell_coords_reindexed = cell_coords.rename(index=dict(zip(cell_coords.index, adata.obs_names)))
     adata.obsm[COORDINATES] = cell_coords_reindexed
+    adata.obs['cell_idx'] = np.array(cell_by_gene.index)
     num_neighs_to_use = num_neigh + 1
     nbrs = NearestNeighbors(n_neighbors=num_neighs_to_use, algorithm='auto').fit(adata.obsm[COORDINATES][[X_COORDINATES,Y_COORDINATES]])
     distances, neigh_idxs = nbrs.kneighbors(adata.obsm[COORDINATES][[X_COORDINATES,Y_COORDINATES]])
@@ -164,6 +165,7 @@ def load_sprinkled_adata_hr_tmpt(tmpt, roi, num_neigh=5):
     cell_coords_reindexed = cell_coords.rename(index=dict(zip(cell_coords.index, adata.obs_names)))
     #cell_annotation_reindexed = cell_annotation.rename(index=dict(zip(cell_annotation.index, adata.obs_names)))
 
+    adata.obs['cell_idx'] = np.array(cell_by_gene.index)
 
     adata.obsm['spatial'] = cell_coords_reindexed
     #adata.obsm['cell_type_dist'] = cell_annotation_reindexed
@@ -266,6 +268,8 @@ def save_spatial_signal(adata, signal_name, save_name, sprinkled=False):
     signal_df['x'] = np.array(adata.obsm[COORDINATES][X_COORDINATES])
     signal_df['y'] = np.array(adata.obsm[COORDINATES][Y_COORDINATES])
     signal_df['signal'] = np.array(adata.obs[signal_name])
+    signal_df['cell_idx'] = np.array(adata.obs['cell_idx'])
     if sprinkled:
         signal_df['sprinkled'] = np.array(adata.obs['spc'])
+        print(np.sum(signal_df['sprinkled']>0))
     signal_df.to_csv(os.path.join(UNPERTURBED_DIR, f'{save_name}.csv'))
