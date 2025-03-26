@@ -41,3 +41,6 @@ from scipy.signal import savgol_filter
 from sklearn.neighbors import BallTree
 
 from skimage.measure import regionprops, label
+from scipy.stats import shapiro
+from scipy.stats import ttest_rel
+from scipy.stats import wilcoxon

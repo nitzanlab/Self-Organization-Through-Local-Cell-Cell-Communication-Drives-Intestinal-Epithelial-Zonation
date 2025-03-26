@@ -47,6 +47,33 @@ def plot_gene_correlation_histograms_GFP_to_wt(num_genes, save_title):
     GFP_72hr_gene_corr = get_all_GFP_to_env_one_tmpt_gene_exp_corr('72hr').iloc[moran_i_genes_idx]
     GFP_12hr_gene_corr = get_all_GFP_to_env_one_tmpt_gene_exp_corr('12hr').iloc[moran_i_genes_idx]
 
+    # differences = GFP_72hr_gene_corr - GFP_12hr_gene_corr
+    # # Shapiro-Wilk test
+    # stat, p = shapiro(differences)
+    # print(f"Shapiro-Wilk Test Statistic: {stat:.4f}")
+    # print(f"p-value: {p:.4f}")
+    # plt.hist(differences, bins=10, edgecolor="k")
+    # plt.title("Histogram of Differences")
+    # plt.show()
+
+    rel_ttest_p_value = ttest_rel(GFP_72hr_gene_corr, GFP_12hr_gene_corr).pvalue
+    print(f'12, 72 hr relative ttest pval : {rel_ttest_p_value}')
+
+    p_value_wil = wilcoxon(GFP_72hr_gene_corr, GFP_12hr_gene_corr).pvalue
+    print(f' 12, 72 wilcoxon pval : {p_value_wil}')
+
+    rel_ttest_p_value12 = ttest_rel(wt_non_GFP_gene_corr, GFP_12hr_gene_corr).pvalue
+    print(f'12, wt hr relative ttest pval : {rel_ttest_p_value12}')
+
+    p_value_wil12 = wilcoxon(wt_non_GFP_gene_corr, GFP_12hr_gene_corr).pvalue
+    print(f' 12, wt wilcoxon pval : {p_value_wil12}')
+
+    rel_ttest_p_value72 = ttest_rel(GFP_72hr_gene_corr, wt_non_GFP_gene_corr).pvalue
+    print(f'72 wt hr relative ttest pval : {rel_ttest_p_value72}')
+
+    p_value_wil72= wilcoxon(GFP_72hr_gene_corr, wt_non_GFP_gene_corr).pvalue
+    print(f' 72  wt wilcoxon pval : {p_value_wil72}')
+
     bins = np.linspace(-0.25, 0.8, 20)
     plt.hist(wt_non_GFP_gene_corr, bins=bins, color='purple', alpha=0.8)
     plt.hist(GFP_72hr_gene_corr, bins=bins, color='orange', alpha=0.8)

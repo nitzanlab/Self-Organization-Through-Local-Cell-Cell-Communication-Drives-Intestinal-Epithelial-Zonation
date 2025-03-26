@@ -34,9 +34,9 @@ def plot_all_autonomous_figure_plots(saved_datasets=False):
     else:
          result_dict = calculate_eroded_transcription_densities(plot_erosion=True, save_components=True)
     ###panel g: erosion expression profiles
-    #plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True, normalize=True)
+    plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True, normalize=True)
     #panel h: heatmap comparison in vivo reconstruction to monolayer, erosion measured expression from edge to interior
-    #expression_profile_heatmap_comparison_invivo_gene_density(genes_in_order_density_measure)
+    expression_profile_heatmap_comparison_invivo_gene_density(genes_in_order_density_measure)
 
 def plot_gene_groups_expression_on_wt_monolayer(gene_group1:list, gene_group2:list, group1_name:str, group2_name:str,zoned=False,zone_x=None, zone_y=None, save=False):
     """
