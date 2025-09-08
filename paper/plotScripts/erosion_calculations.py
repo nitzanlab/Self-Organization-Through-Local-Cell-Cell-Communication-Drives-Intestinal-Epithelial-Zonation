@@ -75,7 +75,7 @@ def calculated_and_plot_zoomed_in_erosion_rings():
     plot_erosion_steps(ring_masks, xedges, yedges, binary_mask_cleaned, image_x_range=EROSION_RINGS_ZOOM_IN,
                        image_y_range=EROSION_RINGS_ZOOM_IN)
 
-def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings=True, save_rings=True):
+def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings=True, save_rings=True,output_path = AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH):
     """
     This function calculates the ring masks in which in ring, the transcript densities for each gene are measured.
     :param plot_rings: boolean: whether to plot the ring masks
@@ -117,7 +117,8 @@ def calculate_ring_masks(binary_mask, xedges, yedges, num_iterations, plot_rings
         ring_region = previous_mask & (~eroded_mask)
         avg = calculate_iteration_width(previous_mask, eroded_mask)
         avg_ring_widths.append(avg)
-
+        df = pd.DataFrame({'avg_ring_width': avg_ring_widths})
+        df.to_csv(os.path.join(output_path,"avg_ring_widths.csv"), index=False)
         # If the ring region is empty, break the loop
         if not ring_region.any():
             break
@@ -199,13 +200,16 @@ def calculate_iteration_width(mask1, mask2):
     # Correct the area and perimeter back to original dimensions
     corrected_ring_area = ring_area*(XY_SPACING ** 2) #binned and spaced every XY_SPACING beforehand in reality,
     corrected_ring_perimeter = ring_perimeter*(XY_SPACING)
-
+        # guard against 0 perimeter or 0 area
+    if corrected_ring_perimeter <= 0 or corrected_ring_area <= 0:
+        return 0
     # Calculate the average width of the ring based on the corrected perimeter
     average_ring_width = corrected_ring_area / corrected_ring_perimeter
 
     # Convert to micrometers
     average_ring_width_um = average_ring_width * PIXEL2NM / 1000
     return average_ring_width_um
+
 
 def compute_unperturbed_monolayer_spatial_mask(save_to_pickle=True):
     #Step 1: load transcripts
@@ -284,7 +288,7 @@ def check_mask_fidelity(data, binary_mask_cleaned, extent):
 
 
 def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, num_iterations=30, plot_rings=True,
-                       image_x_range=None, image_y_range=None):
+                       image_x_range=None, image_y_range=None, output_path = AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH):
     density_image = np.zeros_like(binary_mask, dtype=float)
     color_per_ring = np.arange(len(ring_masks))
     for ring_mask, ring_color in zip(ring_masks, color_per_ring):
@@ -322,8 +326,14 @@ def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, 
     ax.set_title('Transcripts Density Rings', fontsize=14)
     ax.set_xlabel('x', fontsize=12)
     ax.set_ylabel('y', fontsize=12)
+    avg_ring_widths = pd.read_csv(os.path.join(output_path,"avg_ring_widths.csv"))['avg_ring_width'].values
+    legend_patches = [
+    mpatches.Patch(
+        color=cmap(i / len(avg_ring_widths)),
+        label=f'{int(avg_ring_widths[:i].sum())} \u03BCm'
+    )
+    for i, width in enumerate(avg_ring_widths) if width > 0]
 
-    legend_patches = [mpatches.Patch(color=cmap(i / len(ring_masks)), label=f'Ring {i}') for i in range(len(ring_masks))]
 
     legend_patches.append(mpatches.Patch(color='grey', label='Monolayer'))
 
@@ -388,7 +398,7 @@ def plot_erosion_steps(ring_masks, xedges, yedges, binary_mask, erosion_step=5, 
     plt.close()
 
 def compute_transcript_density_in_rings(gene_name, binary_mask, erosion_step, num_iterations, data, xedges, yedges,
-                                        plot_rings=True):
+                                        plot_rings=True,output_path = AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH):
     """
     Computes the density of transcripts in successive rings of the mask.
     Optionally plots the rings with colors representing densities.
@@ -443,6 +453,14 @@ def compute_transcript_density_in_rings(gene_name, binary_mask, erosion_step, nu
         ring_region = previous_mask & (~eroded_mask)
         avg = calculate_iteration_width(previous_mask, eroded_mask)
         avg_ring_widths.append(avg)
+        widths = np.asarray(avg_ring_widths, dtype=float)
+        # Replace inf with NaN, then interpolate; finally fill any edge NaNs with 0
+        s = pd.Series(widths).replace([np.inf, -np.inf], np.nan)
+        s = s.interpolate(limit_direction="both").fillna(0.0)
+
+        pd.DataFrame({'avg_ring_width': s.values}).to_csv(
+            os.path.join(output_path, "avg_ring_widths.csv"),
+            index=False)
 
         # If the ring region is empty, break the loop
         if not ring_region.any():
@@ -619,6 +637,13 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
     Returns:
     - None
     """
+    import numpy as np
+    import os
+    import matplotlib.pyplot as plt
+
+    # Window in physical units (µm)
+    LO, HI = 15, 70
+
     # If gene_names is None, plot all genes
     if gene_names is None:
         gene_names = list(result_dict.keys())
@@ -627,75 +652,117 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
         print("No genes to plot.")
         return
 
+    # helper: distance axis in µm given number of rings
+    avg_iteration_width = load_iteration_average_width()
+    def _dist_axis(n):
+        return np.round(np.arange(1, n + 1) * avg_iteration_width).astype(int)
+
     if spread_plots:
         # Create stacked subplots with shared X-axis
         num_genes = len(gene_names)
-        fig, axs = plt.subplots(num_genes, 1, sharex=True,figsize=(9, 2.5*num_genes))
-
+        fig, axs = plt.subplots(num_genes, 1, sharex=True, figsize=(9, 2.5*num_genes))
         if num_genes == 1:
             axs = [axs]  # Ensure axs is a list even if there is only one subplot
-        yticks = [0,0.5,1]
-        for idx,(ax, gene_name) in enumerate(zip(axs, gene_names)):
-            if gene_name in result_dict:
-                densities = (result_dict[gene_name]['densities'])[:-10] #before [::-1] inside
-                if densities:
-                    if normalize:
-                        max_density = max(densities)
-                        if max_density > 0:
-                            densities = [d / max_density for d in densities]
-                        else:
-                            densities = [0] * len(densities)
-                    iterations = np.arange(1, len(densities) + 1)
-                    ax.plot(iterations, densities, marker='o', label=gene_name, linewidth=5)
-                    ax.set_ylabel('Normalized\n Density' if normalize else 'Density',fontsize=20)
-                    ax.set_yticks(yticks,yticks)
-                    ax.tick_params(axis="y", labelsize=20)
 
-                    ax.grid(True)
-                    if idx == 0:
-                        ax.set_title('Density Profiles of Genes in Successive Rings',fontsize=20)
-                    ax.legend(loc = 'lower right',fontsize=24)
-                else:
-                    print(f"No density data available for gene '{gene_name}'.")
-            else:
+        yticks = [0, 0.5, 1]
+        for idx, (ax, gene_name) in enumerate(zip(axs, gene_names)):
+            if gene_name not in result_dict:
                 print(f"Gene '{gene_name}' not found in the results.")
-        axs[-1].set_xlabel('Distance to Monolayer Edge (μm)',fontsize=20)
-        avg_iteration_width = load_iteration_average_width()
-        dist_to_edge = np.round(np.arange(1, len(densities) + 1) * avg_iteration_width).astype(int)
-        axs[-1].set_xticks(np.arange(1, len(densities) + 1),dist_to_edge, rotation=45, fontsize=20)
-        #axs[-1].set_yticks(np.arange(0,1.05,0.1),np.arange(0,1.05,0.1),fontsize=20)
+                continue
+
+            # take profile and trim last 10 points as in your original code
+            dens = result_dict[gene_name].get('densities', [])[:-10]
+            if not dens:
+                print(f"No density data available for gene '{gene_name}'.")
+                continue
+
+            y = np.asarray(dens, dtype=float)
+            x = _dist_axis(y.size)
+
+            # window to LO..HI µm
+            mask = (x >= LO) & (x <= HI)
+            xw, yw = x[mask], y[mask]
+            if xw.size == 0:
+                print(f"Gene '{gene_name}': no points in {LO}–{HI} µm.")
+                continue
+
+            # normalize AFTER slicing to the window (matches your intent)
+            if normalize:
+                yw = yw-min(yw)  # shift to zero min
+                m = float(yw.max())
+                if m > 0:
+                    yw = yw / m
+                else:
+                    yw = yw  # leave as is (all zeros)
+
+            ax.plot(xw, yw, marker='o', label=gene_name, linewidth=5)
+            ax.set_ylabel('Normalized\n Density' if normalize else 'Density', fontsize=20)
+            # Keep your original y-ticks choice
+            ax.set_yticks(yticks, yticks)
+            ax.tick_params(axis="y", labelsize=20)
+
+            
+            # Optional: nice x ticks every 4 µm (comment out if you prefer default)
+            ax.set_xticks(np.arange(LO, HI + 1, 4), np.arange(LO, HI + 1, 4), rotation=45, fontsize=16)
+
+
+            ax.grid(True)
+            if idx == 0:
+                ax.set_title('Density Profiles of Genes in Successive Rings', fontsize=20)
+            ax.legend(loc='lower right', fontsize=18)
+
+        axs[-1].set_xlabel('Distance to Monolayer Edge (μm)', fontsize=20)
+
+        # === EXACT save/show logic & path as your original ===
         plt.tight_layout()
         os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
-        file_name = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, 'monolayer_zonation_expression_profiles.pdf')
+        file_name = os.path.join(
+            AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH,
+            'monolayer_zonation_expression_profiles.pdf'
+        )
         plt.savefig(file_name, format='pdf')
         plt.show()
         plt.close()
+
     else:
-        # Plot all genes on the same plot
+        # Plot all genes on the same plot (no saving in original)
         plt.figure(figsize=(12, 8))
+        plotted_any = False
+
         for gene_name in gene_names:
-            if gene_name in result_dict:
-                densities = result_dict[gene_name]['densities']
-                if densities:
-                    if normalize:
-                        max_density = max(densities)
-                        if max_density > 0:
-                            densities = [d / max_density for d in densities]
-                        else:
-                            densities = [0] * len(densities)
-                    avg_iteration_width = load_iteration_average_width()
-                    iterations = np.round(np.arange(1, len(densities) + 1)*avg_iteration_width,2)
-                    plt.plot(iterations, densities, marker='o', label=gene_name)
-                else:
-                    print(f"No density data available for gene '{gene_name}'.")
-            else:
+            if gene_name not in result_dict:
                 print(f"Gene '{gene_name}' not found in the results.")
+                continue
+
+            dens = result_dict[gene_name].get('densities', [])[:-10]
+            if not dens:
+                print(f"No density data available for gene '{gene_name}'.")
+                continue
+
+            y = np.asarray(dens, dtype=float)
+            x = _dist_axis(y.size)
+
+            # window
+            mask = (x >= LO) & (x <= HI)
+            xw, yw = x[mask], y[mask]
+            if xw.size == 0:
+                continue
+
+            if normalize:
+                m = float(yw.max())
+                if m > 0:
+                    yw = yw / m
+
+            plt.plot(xw, yw, marker='o', label=gene_name)
+            plotted_any = True
+
         plt.title('Density Profiles of Genes in Successive Rings')
         plt.xlabel('Distance to Monolayer Edge (μm)')
-        plt.xticks()
-        plt.ylabel('Normalized Density' if normalize else 'Density (transcripts per unit area)',fontsize=20)
+        plt.ylabel('Normalized Density' if normalize else 'Density (transcripts per unit area)', fontsize=20)
         plt.grid(True)
-        plt.legend()
+        if plotted_any:
+            plt.xlim(LO, HI)
+            plt.legend()
         plt.show()
         plt.close()
 
