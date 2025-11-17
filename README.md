@@ -5,7 +5,7 @@ This is the repo of the code containing the necessary functions to reproduce the
 ## Installation and Setup
 
 1. Clone the repository.
-2. Download the data 
+2. Download the data from https://www.dropbox.com/scl/fo/71v82hm9o5x132guykmqd/AFzck_zhhgQfU9zRhFMJvGo?rlkey=k8w5dl65pp6yjxhchbf32lk2x&st=2lu1rm9u&dl=0
 3. Download from 'Moor, A. E., Harnik, Y., Ben-Moshe, S., Massasa, E. E., Rozenberg, M., Eilam, R., ... & Itzkovitz, S.
  (2018). Spatial reconstruction of single enterocytes uncovers broad zonation along the intestinal villus axis. Cell,
   175(4), 1156-1167.' 
