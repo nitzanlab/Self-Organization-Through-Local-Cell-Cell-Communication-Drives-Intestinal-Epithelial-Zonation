@@ -1,11 +1,11 @@
-# Resilience-of-spatial-structure-in-intestinal-organoids-revealed-by-spatial-transcriptomics
+# Self-Organization Through Local Cell-Cell Communication Drives Intestinal Epithelial Zonation
 This is the repo of the code containing the necessary functions to reproduce the analyses and figure panels presented in our paper.
 
 
 ## Installation and Setup
 
 1. Clone the repository.
-2. Download the data 
+2. Download the data from https://zenodo.org/records/17956270?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjczOWNlZDI0LTFlM2EtNGJjNy1iOTQwLTVlNDRjYTMzMjRlZCIsImRhdGEiOnt9LCJyYW5kb20iOiJkMGY2YjE2MjA4MDk0OWE2NTFiZjYxNzM4ZTI1YTgzZSJ9.Krydne1ABLYQe4DYJi13XDA6LZZ5mSfEpAeeTy32doKHx45VSEQEj8LUXBhq4CtHB1-Yfpmuih_lPA_jW-iaxg
 3. Download from 'Moor, A. E., Harnik, Y., Ben-Moshe, S., Massasa, E. E., Rozenberg, M., Eilam, R., ... & Itzkovitz, S.
  (2018). Spatial reconstruction of single enterocytes uncovers broad zonation along the intestinal villus axis. Cell,
   175(4), 1156-1167.' 
