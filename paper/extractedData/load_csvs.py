@@ -273,3 +273,73 @@ def save_spatial_signal(adata, signal_name, save_name, sprinkled=False):
         signal_df['sprinkled'] = np.array(adata.obs['spc'])
         print(np.sum(signal_df['sprinkled']>0))
     signal_df.to_csv(os.path.join(UNPERTURBED_DIR, f'{save_name}.csv'))
+
+def get_LCM_atlas_gene_subset_with_sd(LCM_atlas, genes_list):
+    filted = LCM_atlas[LCM_atlas['external_gene_name'].isin(genes_list)].copy()
+    ordered = [g for g in genes_list if g in set(filted['external_gene_name'])]
+
+    pos_means, pos_sds = {}, {}
+    for i in range(NUM_POSITIONS_LCM_ATLAS):
+        cols = [c for c in filted.columns if c.startswith(f'Villus_{i+1}')]
+        pos_means[f'Villus_{i+1}'] = filted[cols].mean(axis=1)
+        pos_sds[f'Villus_{i+1}']   = filted[cols].std(axis=1, ddof=1)
+
+    mean_df = pd.DataFrame(pos_means); sd_df = pd.DataFrame(pos_sds)
+    mean_df.index = filted['external_gene_name'].values
+    sd_df.index   = filted['external_gene_name'].values
+    mean_df = mean_df.loc[ordered]; sd_df = sd_df.loc[ordered]
+
+    gmin = mean_df.min(axis=1)
+    grng = (mean_df.max(axis=1) - gmin).replace(0, np.nan)
+    mean_norm = (mean_df.sub(gmin, axis=0)).div(grng, axis=0).fillna(0.0)
+    sd_norm   = sd_df.div(grng, axis=0).fillna(0.0)
+    return mean_norm, sd_norm, ordered
+# --- Gene set loader (enterocytes etc.) ---
+# --- Gene set loader (enterocytes etc.) ---
+# --- Gene set loader (enterocytes etc.) ---
+def load_gene_set_from_index_csv(
+    csv_path=None,
+    include_celltypes=("enterocyte",),
+    gene_cols=("gene", "Gene", "external_gene_name", "symbol"),
+    celltype_cols=("celltype", "cell_type", "CellType", "annotation", "cell.type", "Cell.type"),
+):
+    """
+    Return a unique set of genes whose cell type matches any of include_celltypes (case-insensitive).
+
+    If csv_path is None, defaults to <AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH>/sorted_indexing.csv
+    """
+    import os
+    import pandas as pd
+
+    try:
+        AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH
+    except NameError:
+        from utils.imports import AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH
+
+    if csv_path is None:
+        csv_path = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, "sorted_indexing.csv")
+
+    df = pd.read_csv(csv_path)
+
+    gcol = next((c for c in gene_cols if c in df.columns), None)
+    ccol = next((c for c in celltype_cols if c in df.columns), None)
+    if gcol is None or ccol is None:
+        raise ValueError(
+            f"Could not find gene column in {gene_cols} and celltype column in {celltype_cols}. "
+            f"Columns present: {list(df.columns)}"
+        )
+
+    mask = False
+    for term in include_celltypes:
+        mask = mask | df[ccol].astype(str).str.contains(term, case=False, na=False)
+
+    genes = (
+        df.loc[mask, gcol]
+          .astype(str).str.strip()
+          .str.replace(r"\s+", "", regex=True)
+          .unique()
+          .tolist()
+    )
+    return set(genes)
+
+

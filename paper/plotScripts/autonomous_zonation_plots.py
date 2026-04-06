@@ -37,6 +37,7 @@ def plot_all_autonomous_figure_plots(saved_datasets=False):
     plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True, normalize=True)
     #panel h: heatmap comparison in vivo reconstruction to monolayer, erosion measured expression from edge to interior
     expression_profile_heatmap_comparison_invivo_gene_density(genes_in_order_density_measure)
+    expression_profile_heatmap_invivo(EPHRIN_GENES)
 
 def plot_gene_groups_expression_on_wt_monolayer(gene_group1:list, gene_group2:list, group1_name:str, group2_name:str,zoned=False,zone_x=None, zone_y=None, save=False):
     """
@@ -135,7 +136,83 @@ def expression_profile_heatmap_comparison_invivo_gene_density(gene_set):
     plt.savefig(file_name, format='pdf')
     plt.show()
     plt.close()
+    
+def expression_profile_heatmap_invivo(
+    gene_set,
+    title=r"$\it{In\ Vivo}$ Expression",
+    save_name="invivo_expression_heatmap.pdf",
+    flip_top_to_bottom=True,
+):
+    """
+    Plot a heatmap of in vivo reconstruction ONLY (no monolayer checks).
 
+    Parameters
+    ----------
+    gene_set : iterable of str
+        Genes you'd like to plot.
+    title : str
+        Plot title.
+    save_name : str
+        PDF filename saved under AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH.
+    flip_top_to_bottom : bool
+        If True, reverse V1_mean..V6_mean so the x-axis reads Top→Bottom.
+
+    Returns
+    -------
+    plotted_genes : list[str]
+        The genes that were present in the reconstruction and plotted.
+    """
+    # Load in vivo reconstruction (expects V1_mean..V6_mean columns)
+    reconstruction = mean_gene_exp_per_zone_in_invivo_reconstruction_no_crypt()
+    recon_index = pd.Index(reconstruction.index).astype(str)
+
+    # Keep only genes that exist in reconstruction
+    requested = list(pd.Index(gene_set).astype(str))
+    present = [g for g in requested if g in recon_index]
+    dropped = [g for g in requested if g not in recon_index]
+    if dropped:
+        print(f"[INFO] {len(dropped)} genes not in reconstruction (ignored): {dropped[:10]}")
+    if not present:
+        print("[INFO] No requested genes found in reconstruction. Nothing to plot.")
+        return []
+
+    # Subset and keep only numeric columns (guards against stray metadata)
+    df = reconstruction.loc[present]
+    num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    if not num_cols:
+        raise ValueError("Reconstruction table has no numeric columns to plot.")
+    df = df[num_cols]
+
+    # Optional flip: Top←→Bottom
+    if flip_top_to_bottom:
+        df = df.iloc[:, ::-1]
+
+    # Nicer column labels if they look like V*_mean
+    df = df.rename(columns={c: c.replace("_mean", "") for c in df.columns})
+
+    # Normalize 0–1 per gene (row-wise)
+    norm = (df.T - df.T.min(axis=0)) / (df.T.max(axis=0) - df.T.min(axis=0))
+    norm = norm.T
+
+    # Plot
+    plt.figure()
+    ax = sns.heatmap(norm, cmap='plasma', vmin=0, vmax=1)
+    cbar = ax.collections[0].colorbar
+    cbar.set_label('Normalized Gene Expression')
+    plt.xlabel('Villus Top to Bottom' if flip_top_to_bottom else 'Villus Bottom to Top')
+    plt.xticks(rotation=0)
+    plt.ylabel('Genes')
+    plt.yticks(rotation=0)
+    plt.title(title)
+    plt.tight_layout()
+
+    # Save
+    os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
+    out_path = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, save_name)
+    plt.savefig(out_path, format='pdf')
+    plt.show()
+    plt.close()
+    
 def mean_gene_exp_per_zone_in_invivo_reconstruction_no_crypt():
     reconstruction = load_invivo_reconstruction()
     return reconstruction[['V1_mean', 'V2_mean', 'V3_mean', 'V4_mean', 'V5_mean', 'V6_mean']]

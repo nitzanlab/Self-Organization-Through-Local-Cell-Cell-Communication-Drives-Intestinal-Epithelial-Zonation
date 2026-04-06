@@ -11,7 +11,7 @@ def plot_all_neighborhood_zone_adoption_plots():
     #plot_expected_cell_zones()
 
     ###panel c: expected zones in inserted cells, subregion of inserted monolayers
-    plot_inserted_cells_expected_zones_spatially()
+    # plot_inserted_cells_expected_zones_spatially()
 
     ###panel d: correlation in expected zone to neighbors
     #plot_expected_zone_correlations(ORGANOID_GENE_NAMES_NOGFP, num_neigh=5)
@@ -22,8 +22,8 @@ def plot_all_neighborhood_zone_adoption_plots():
     # plot_inserted_cells_expected_zone_distribution()
     #
     # ###panel f: inserted cells zone confusion
-    # plot_inserted_cells_zone_confusion_distribution('12hr')
-    # plot_inserted_cells_zone_confusion_distribution('72hr')
+    plot_inserted_cells_zone_confusion_distribution('12hr')
+    plot_inserted_cells_zone_confusion_distribution('72hr')
     # #
     # # ###panel g: gene contribution to zone confusion
     # plot_zone_confusion_gene_contribution('72hr', genes=ZONE_MAPPING_GENES)
@@ -357,7 +357,17 @@ def plot_inserted_cells_zone_confusion_distribution(tmpt):
     plt.tight_layout()
     plt.show()
     plt.close()
+        # ---- Summary statistics: mean confusion for GFP vs non-GFP ----
+    mean_entropy_gfp = float(adata_gfp.obs['zone_entropy'].mean())
+    std_entropy_gfp = float(adata_gfp.obs['zone_entropy'].std())
+    n_gfp = int(adata_gfp.shape[0])
+
+    mean_entropy_non = float(adata_non_gfp.obs['zone_entropy'].mean())
+    std_entropy_non = float(adata_non_gfp.obs['zone_entropy'].std())
+    n_non = int(adata_non_gfp.shape[0])
     stat, p_value = ks_2samp(adata_gfp.obs['transcript_exp_pos'], adata_non_gfp.obs['transcript_exp_pos'])
+    print(f"[{tmpt}] GFP cells: mean zone entropy = {mean_entropy_gfp:.3f} ± {std_entropy_gfp:.3f} (n={n_gfp})")
+    print(f"[{tmpt}] non-GFP cells: mean zone entropy = {mean_entropy_non:.3f} ± {std_entropy_non:.3f} (n={n_non})")
     print(f"KS Statistic: {stat}, p-value: {p_value} {tmpt}")
 
 def plot_GFP_adata_signal_spatially(adata, signal_name, adata_type, zoned=False, x_range=None, y_range=None, to_plot=True, title=''):

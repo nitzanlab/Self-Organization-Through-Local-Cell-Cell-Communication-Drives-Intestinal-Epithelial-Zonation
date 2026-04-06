@@ -1,5 +1,9 @@
 import numpy as np
+from scipy import stats
 
+from scipy.signal import savgol_filter
+import numpy as np
+import pandas as pd
 from paper.extractedData.load_csvs import *
 from utils.imports import *
 def calculate_eroded_transcription_densities(plot_erosion=True, save_components=True):
@@ -765,6 +769,408 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
             plt.legend()
         plt.show()
         plt.close()
+def plot_density_profiles_with_std(
+    result_dict,
+    gene_names=None,
+    normalize=True,          # normalize AFTER slicing (shift to 0, then /max) — like your plots
+    spread_plots=True,       # stacked panels (True) or all-in-one (False)
+    LO=16, HI=61,            # window in µm (set to 15,70 if you prefer your other window)
+):
+    import numpy as np, os
+    import matplotlib.pyplot as plt
+
+    # helper: average-width distance axis (identical to your logic)
+    avg_iteration_width = load_iteration_average_width()
+    def _dist_axis(n):
+        return np.round(np.arange(1, n + 1) * avg_iteration_width).astype(int)
+
+    # ensure genes list
+    if gene_names is None:
+        gene_names = list(result_dict.keys())
+    if not gene_names:
+        print("No genes to plot.")
+        return
+
+    # ensure we have per-ring SD; if missing, compute Poisson SD from counts/areas
+    def _ensure_std(g):
+        if "std" not in result_dict[g]:
+            counts = np.asarray(result_dict[g].get("counts", []), dtype=float)
+            areas  = np.asarray(result_dict[g].get("areas",  []), dtype=float)
+            if counts.size and areas.size and counts.size == areas.size:
+                sd = np.sqrt(np.maximum(counts, 0.0)) / np.maximum(areas, 1e-12)
+                result_dict[g]["std"] = sd.tolist()
+            else:
+                # fallback: zeros (no SD info available)
+                dens = np.asarray(result_dict[g].get("densities", []), dtype=float)
+                result_dict[g]["std"] = np.zeros_like(dens, dtype=float)
+
+    # figure setup
+    if spread_plots:
+        n = len(gene_names)
+        fig, axs = plt.subplots(n, 1, sharex=True, figsize=(9, 2.8*n))
+        if n == 1:
+            axs = [axs]
+        for ax, gene_name in zip(axs, gene_names):
+            if gene_name not in result_dict:
+                print(f"Gene '{gene_name}' not found.")
+                continue
+
+            _ensure_std(gene_name)
+
+            # take profile and trim last 10 points (exactly your behavior)
+            dens = np.asarray(result_dict[gene_name].get('densities', []), dtype=float)[:-10]
+            sd   = np.asarray(result_dict[gene_name].get('std',       []), dtype=float)[:-10]
+            if dens.size == 0:
+                print(f"No density data for '{gene_name}'.")
+                continue
+
+            x = _dist_axis(dens.size)
+            mask = (x >= LO) & (x <= HI)
+            xw, yw, sdw = x[mask], dens[mask], sd[mask]
+            if xw.size == 0:
+                print(f"Gene '{gene_name}': no points in {LO}–{HI} µm.")
+                continue
+
+            # normalize AFTER slicing (shift to zero min, then divide by max)
+            if normalize:
+                yw = yw - yw.min()
+                m = float(yw.max())
+                if m > 0:
+                    sdw = sdw / m
+                    yw  = yw  / m
+
+            ax.plot(xw, yw, linewidth=2.5, label=gene_name)
+            ax.fill_between(xw, np.clip(yw - sdw, 0, None), yw + sdw, alpha=0.25)
+            ax.set_ylabel('Normalized\nDensity' if normalize else 'Density', fontsize=12)
+            ax.grid(True, alpha=0.3)
+            ax.legend(loc='upper right', fontsize=10)
+
+        axs[-1].set_xlabel('Distance to Monolayer Edge (µm)', fontsize=12)
+        plt.tight_layout()
+        os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
+        out = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, f'monolayer_zonation_expression_profiles_with_sd_{LO}to{HI}.pdf')
+        plt.savefig(out, format='pdf')
+        plt.show()
+        plt.close()
+
+    else:
+        # all genes on one panel
+        plt.figure(figsize=(10, 6))
+        any_plotted = False
+        for gene_name in gene_names:
+            if gene_name not in result_dict:
+                print(f"Gene '{gene_name}' not found.")
+                continue
+
+            _ensure_std(gene_name)
+
+            dens = np.asarray(result_dict[gene_name].get('densities', []), dtype=float)[:-10]
+            sd   = np.asarray(result_dict[gene_name].get('std',       []), dtype=float)[:-10]
+            if dens.size == 0:
+                continue
+
+            x = _dist_axis(dens.size)
+            mask = (x >= LO) & (x <= HI)
+            xw, yw, sdw = x[mask], dens[mask], sd[mask]
+            if xw.size == 0:
+                continue
+
+            if normalize:
+                yw = yw - yw.min()
+                m = float(yw.max())
+                if m > 0:
+                    sdw = sdw / m
+                    yw  = yw  / m
+
+            plt.plot(xw, yw, linewidth=2, label=gene_name)
+            plt.fill_between(xw, np.clip(yw - sdw, 0, None), yw + sdw, alpha=0.2)
+            any_plotted = True
+
+        plt.title('Density Profiles with ±SD (windowed)', fontsize=13)
+        plt.xlabel('Distance to Monolayer Edge (µm)')
+        plt.ylabel('Normalized Density' if normalize else 'Density')
+        plt.grid(True, alpha=0.3)
+        if any_plotted:
+            plt.xlim(LO, HI)
+            plt.legend(fontsize=9, ncol=2)
+        plt.show()
+        plt.close()
+def compare_monolayer_profiles_to_invivo(
+    result_dict,
+    genes=None,
+    LO=16,
+    HI=61,
+    normalize=True,
+    smooth=True,
+    do_weighted=False,
+    out_dir=None,
+    save_csv=True,
+):
+    """
+    Compare monolayer erosion-ring profiles (built exactly like plot_density_profiles_with_std)
+    to in-vivo villus profiles.
+
+    - Monolayer profile: trim last 10 rings, build x-axis from avg ring width,
+      window LO–HI µm, normalize AFTER slicing, optional smoothing.
+    - In-vivo profile: mean ± SD from LCM atlas (V6→V1), interpolated to same sampling.
+    - Outputs one overlay plot per gene and a CSV with correlation values.
+    """
+    import numpy as np, os, pandas as pd
+    import matplotlib.pyplot as plt
+    from scipy import stats
+
+    # --- output directory ---
+    if out_dir is None:
+        out_dir = os.path.join(UNPERTURBED_DIR, "invivo_to_monolayer_expression_profiles")
+    os.makedirs(out_dir, exist_ok=True)
+
+    # --- helper from your plotting fn ---
+    avg_iteration_width = load_iteration_average_width()
+    def _dist_axis(n):
+        return np.round(np.arange(1, n + 1) * avg_iteration_width).astype(int)
+
+    # --- determine genes ---
+    if genes is None:
+        genes = list(result_dict.keys())
+    genes = [str(g) for g in genes if g in result_dict]
+    if not genes:
+        raise ValueError("No valid genes found in result_dict")
+
+    # --- ensure per-gene std available (same as before) ---
+    def _ensure_std(g):
+        if "std" not in result_dict[g]:
+            counts = np.asarray(result_dict[g].get("counts", []), dtype=float)
+            areas  = np.asarray(result_dict[g].get("areas",  []), dtype=float)
+            if counts.size and areas.size and counts.size == areas.size:
+                sd = np.sqrt(np.maximum(counts, 0.0)) / np.maximum(areas, 1e-12)
+                result_dict[g]["std"] = sd.tolist()
+            else:
+                dens = np.asarray(result_dict[g].get("densities", []), dtype=float)
+                result_dict[g]["std"] = np.zeros_like(dens, dtype=float)
+
+    # --- build monolayer matrices ---
+    mono_mean_dict = {}
+    mono_sd_dict   = {}
+
+    for g in genes:
+        _ensure_std(g)
+        dens = np.asarray(result_dict[g].get("densities", []), dtype=float)[:-10]
+        sd   = np.asarray(result_dict[g].get("std", []), dtype=float)[:-10]
+        if dens.size == 0:
+            continue
+        x = _dist_axis(dens.size)
+        mask = (x >= LO) & (x <= HI)
+        xw, yw, sdw = x[mask], dens[mask], sd[mask]
+        if xw.size == 0:
+            continue
+        if normalize:
+            yw = yw - yw.min()
+            m = float(yw.max())
+            if m > 0:
+                sdw = sdw / m
+                yw  = yw  / m
+        mono_mean_dict[g] = yw
+        mono_sd_dict[g]   = sdw
+
+    if not mono_mean_dict:
+        raise ValueError("No valid monolayer profiles after windowing.")
+
+    # align x-grid
+    x_um = np.linspace(LO, HI, len(next(iter(mono_mean_dict.values()))))
+    x_m  = (x_um - LO) / (HI - LO)  # normalized 0–1 for correlation/interp
+
+    # --- load in-vivo atlas ---
+    inv_raw = load_TPM_LCM_intestine_atlas()
+    inv_mean, inv_sd, _ = get_LCM_atlas_gene_subset_with_sd(inv_raw, genes)
+    desired_cols = [f"Villus_{i}" for i in range(6, 0, -1)]
+    present_cols = [c for c in desired_cols if c in inv_mean.columns]
+    inv_mean = inv_mean.reindex(columns=present_cols)
+    inv_sd   = inv_sd.reindex(columns=present_cols)
+    x_i = np.linspace(0, 1, inv_mean.shape[1])
+
+    # --- compare ---
+    rows = []
+    for g in mono_mean_dict.keys():
+        if g not in inv_mean.index:
+            continue
+        mono_y = mono_mean_dict[g]
+        mono_s = mono_sd_dict[g]
+        inv    = inv_mean.loc[g].values
+        invs   = inv_sd.loc[g].values
+        inv_i  = np.interp(x_m, x_i, inv)
+        invs_i = np.interp(x_m, x_i, invs)
+
+        # correlations
+        r   = float(np.corrcoef(mono_y, inv_i)[0, 1])
+        rho = float(stats.spearmanr(mono_y, inv_i).correlation)
+        r_w = np.nan
+        if do_weighted:
+            w = 1.0 / (np.square(mono_s) + np.square(invs_i) + 1e-12)
+            xm = np.average(mono_y, weights=w)
+            yi = np.average(inv_i, weights=w)
+            num = np.sum(w * (mono_y - xm) * (inv_i - yi))
+            den = np.sqrt(np.sum(w * (mono_y - xm)**2) * np.sum(w * (inv_i - yi)**2))
+            r_w = float(num / den) if den > 0 else np.nan
+
+        rows.append({"gene": g, "pearson": r, "spearman": rho, "pearson_weighted": r_w})
+
+        # --- overlay plot ---
+        fig, ax = plt.subplots(figsize=(4, 3.2))
+        ax.plot(x_m, mono_y, linewidth=2, label=f"Monolayer ({LO}→{HI} µm)")
+        ax.fill_between(x_m, np.clip(mono_y - mono_s, 0, 1), mono_y + mono_s, alpha=0.25)
+        ax.plot(x_m, inv_i, linewidth=2, label="In vivo (V6→V1)")
+        ax.fill_between(x_m, np.clip(inv_i - invs_i, 0, 1), inv_i + invs_i, alpha=0.25)
+        ax.set_xlim(0, 1); ax.set_ylim(0, 1.05)
+        ax.set_xticks([0, 1]); ax.set_xticklabels(["V6 (tip)", "V1 (base)"])
+        ax.set_ylabel("Normalized expression" if normalize else "Expression")
+        title_extra = f"(r={r:.2f}, ρ={rho:.2f})" if not do_weighted else f"(r={r:.2f}, ρ={rho:.2f}, r_w={r_w:.2f})"
+        ax.set_title(f"{g} {title_extra}")
+        ax.legend(frameon=False)
+        fig.tight_layout()
+        out_pdf = os.path.join(out_dir, f"{g}_overlay_{LO}to{HI}um_V6toV1.pdf")
+        fig.savefig(out_pdf, format="pdf")
+        plt.close(fig)
+
+    # --- save correlations table ---
+    if save_csv and rows:
+        df = pd.DataFrame(rows)
+        csv_path = os.path.join(out_dir, f"profile_correlations_{LO}to{HI}um_V6toV1.csv")
+        df.to_csv(csv_path, index=False)
+        print(f"[Saved] Correlation table → {csv_path}")
+
+    print(f"[Saved] Overlay PDFs → {out_dir}")
+def summarize_enterocyte_correlations(
+    corr_csv=None,
+    enterocyte_csv=None,
+    threshold=0.5,
+    out_dir=None,
+    include_celltypes=("enterocyte",),
+    corr_col_priority=("pearson_weighted", "pearson", "spearman")
+):
+    """
+    Load correlation table, filter to enterocyte genes, and report how many exceed `threshold`.
+    Saves a filtered CSV alongside the summary.
+    """
+    import pandas as pd, os
+
+    if out_dir is None:
+        out_dir = os.path.join(UNPERTURBED_DIR, "invivo_to_monolayer_expression_profiles")
+    os.makedirs(out_dir, exist_ok=True)
+
+    if corr_csv is None:
+        # default expected filename from the earlier function using 16–61 µm
+        corr_csv = os.path.join(out_dir, "profile_correlations_16to61um_V6toV1.csv")
+    if enterocyte_csv is None:
+        # EDIT this to wherever your indexing CSV lives
+        enterocyte_csv = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, "sorted_indexing.csv")
+
+    # load
+    corr = pd.read_csv(corr_csv)
+    corr["gene"] = corr["gene"].astype(str).str.strip()
+
+    from paper.extractedData.load_csvs import load_gene_set_from_index_csv
+    enterocyte_genes = load_gene_set_from_index_csv(enterocyte_csv, include_celltypes=include_celltypes)
+
+    # choose correlation column to score by (first available in priority list)
+    score_col = next((c for c in corr_col_priority if c in corr.columns), None)
+    if score_col is None:
+        raise ValueError(f"No correlation columns found among {corr_col_priority}. Columns present: {list(corr.columns)}")
+
+    # filter + compute summary
+    ec = corr[corr["gene"].isin(enterocyte_genes)].copy()
+    n_total = len(ec)
+    n_high = int((ec[score_col] > threshold).sum())
+    frac_high = (n_high / n_total) if n_total else float("nan")
+
+    # save filtered
+    out_filtered = os.path.join(out_dir, f"enterocyte_correlations_filtered_{score_col}_thr{threshold}.csv")
+    ec.to_csv(out_filtered, index=False)
+
+    # write a tiny summary file too
+    summary_txt = os.path.join(out_dir, f"enterocyte_summary_{score_col}_thr{threshold}.txt")
+    with open(summary_txt, "w") as f:
+        f.write(f"Enterocyte genes above {threshold} by {score_col}: {n_high}/{n_total} ({frac_high:.1%})\n")
+        f.write(f"Filtered table: {out_filtered}\n")
+
+    print(f"[Enterocytes] {n_high}/{n_total} ({frac_high:.1%}) > {threshold} by {score_col}")
+    print(f"[Saved] {out_filtered}")
+    print(f"[Saved] {summary_txt}")
+
+    return {
+        "score_col": score_col,
+        "threshold": threshold,
+        "n_total": n_total,
+        "n_high": n_high,
+        "fraction_high": frac_high,
+        "filtered_csv": out_filtered,
+        "summary_txt": summary_txt,
+    }
+def summarize_enterocyte_correlations(
+    corr_csv=None,
+    enterocyte_csv=None,
+    threshold=0.5,
+    out_dir=None,
+    include_celltypes=("enterocyte",),
+    corr_col_priority=("pearson_weighted", "pearson", "spearman")
+):
+    """
+    Load correlation table, filter to enterocyte genes, and report how many exceed `threshold`.
+    Saves a filtered CSV alongside the summary.
+    """
+    import pandas as pd, os
+
+    if out_dir is None:
+        out_dir = os.path.join(UNPERTURBED_DIR, "invivo_to_monolayer_expression_profiles")
+    os.makedirs(out_dir, exist_ok=True)
+
+    if corr_csv is None:
+        # default expected filename from the earlier function using 16–61 µm
+        corr_csv = os.path.join(out_dir, "profile_correlations_16to61um_V6toV1.csv")
+    if enterocyte_csv is None:
+        # EDIT this to wherever your indexing CSV lives
+        enterocyte_csv = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, "sorted_indexing.csv")
+
+    # load
+    corr = pd.read_csv(corr_csv)
+    corr["gene"] = corr["gene"].astype(str).str.strip()
+
+    from paper.plotScripts.load_csvs import load_gene_set_from_index_csv
+    enterocyte_genes = load_gene_set_from_index_csv(enterocyte_csv, include_celltypes=include_celltypes)
+
+    # choose correlation column to score by (first available in priority list)
+    score_col = next((c for c in corr_col_priority if c in corr.columns), None)
+    if score_col is None:
+        raise ValueError(f"No correlation columns found among {corr_col_priority}. Columns present: {list(corr.columns)}")
+
+    # filter + compute summary
+    ec = corr[corr["gene"].isin(enterocyte_genes)].copy()
+    n_total = len(ec)
+    n_high = int((ec[score_col] > threshold).sum())
+    frac_high = (n_high / n_total) if n_total else float("nan")
+
+    # save filtered
+    out_filtered = os.path.join(out_dir, f"enterocyte_correlations_filtered_{score_col}_thr{threshold}.csv")
+    ec.to_csv(out_filtered, index=False)
+
+    # write a tiny summary file too
+    summary_txt = os.path.join(out_dir, f"enterocyte_summary_{score_col}_thr{threshold}.txt")
+    with open(summary_txt, "w") as f:
+        f.write(f"Enterocyte genes above {threshold} by {score_col}: {n_high}/{n_total} ({frac_high:.1%})\n")
+        f.write(f"Filtered table: {out_filtered}\n")
+
+    print(f"[Enterocytes] {n_high}/{n_total} ({frac_high:.1%}) > {threshold} by {score_col}")
+    print(f"[Saved] {out_filtered}")
+    print(f"[Saved] {summary_txt}")
+
+    return {
+        "score_col": score_col,
+        "threshold": threshold,
+        "n_total": n_total,
+        "n_high": n_high,
+        "fraction_high": frac_high,
+        "filtered_csv": out_filtered,
+        "summary_txt": summary_txt,
+    }
 
 def plot_unperturbed_monolayer_gene_density_to_invivo_comparisons():
     """
@@ -797,5 +1203,329 @@ def plot_unperturbed_monolayer_gene_density_to_invivo_comparisons():
         #plt.show()
         plt.close()
 
-def apply_savgol(column):
-    return savgol_filter(column, window_length=15, polyorder=3)
+
+
+def apply_savgol(column, max_window=15, polyorder=3):
+    """
+    Adaptive Savitzky–Golay: choose the largest odd window <= len(column)
+    and > polyorder. If too short, return unchanged.
+    """
+    arr = np.asarray(column, dtype=float)
+    n = arr.shape[0]
+    # largest odd window <= n and <= max_window
+    w = n if n % 2 == 1 else n - 1
+    w = min(w, max_window)
+    while w >= 3 and w <= polyorder:
+        w -= 2
+    if w >= 3:
+        return pd.Series(savgol_filter(arr, window_length=w, polyorder=min(polyorder, w-1)))
+    else:
+        return pd.Series(arr)
+
+
+
+def _add_poisson_sd_to_result_dict(result_dict):
+    for g, dd in result_dict.items():
+        counts = np.asarray(dd["counts"], dtype=float)
+        areas  = np.asarray(dd["areas"], dtype=float)
+        sd = np.sqrt(np.maximum(counts, 0.0)) / np.maximum(areas, 1e-12)
+        dd["std"] = sd.tolist()
+    return result_dict
+def _cum_ring_dist_um(avg_widths_csv):
+    widths = pd.read_csv(avg_widths_csv)["avg_ring_width"].values.astype(float)
+    widths = np.nan_to_num(widths, nan=0.0, posinf=0.0, neginf=0.0)
+    return np.cumsum(widths)
+def compare_profiles_16_61_um(
+    genes=None,
+    window_um=(16.0, 61.0),
+    avg_widths_csv=os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, "avg_ring_widths.csv"),
+    smooth=True,
+    do_weighted=False,          # keep off initially
+    out_dir=None,
+    save_csv=True
+):
+    if out_dir is None:
+        out_dir = os.path.join(UNPERTURBED_DIR, "invivo_to_monolayer_expression_profiles")
+    os.makedirs(out_dir, exist_ok=True)
+
+    # --- monolayer ---
+    mono_dict = _add_poisson_sd_to_result_dict(load_unperturbed_monolayer_gene_densities())
+
+    # If no gene list was passed, default to everything we have (already excludes GFP)
+    if genes is None:
+        genes = sorted(mono_dict.keys())
+    else:
+        missing = [g for g in genes if g not in mono_dict]
+        if missing:
+            print(f"[compare_profiles_16_61_um] Skipping genes not in monolayer densities: {missing}")
+        genes = [g for g in genes if g in mono_dict]
+        if not genes:
+            raise ValueError("None of the requested genes have monolayer erosion densities.")
+    # normalize numpy.str_ -> str
+    genes = [str(g) for g in genes]
+
+    # ---- MATCH plot_density_profiles WINDOWING EXACTLY ----
+    LO, HI = int(window_um[0]), int(window_um[1])  # e.g., 16, 61
+    avg_width = load_iteration_average_width()      # same helper your plotting fn uses
+
+    # Determine common usable length across genes, trim last 10 rings (as in plot_density_profiles)
+    usable_n = min(len(mono_dict[g]["densities"]) for g in genes)
+    usable_n = max(0, usable_n - 10)
+    if usable_n < 3:
+        raise ValueError("Not enough rings after trimming to perform comparison.")
+
+    # Fake distance axis from average width (rounded to integers), then window LO..HI
+    x_um_full = np.round(np.arange(1, usable_n + 1) * avg_width).astype(int)
+    mask = (x_um_full >= LO) & (x_um_full <= HI)
+    if not mask.any():
+        raise ValueError(f"No rings fall within {LO}–{HI} µm using the average-width axis.")
+
+    # Build monolayer matrices using THIS mask (no flips; this mirrors your plotting fn)
+    mono_mean = pd.DataFrame({
+        g: np.asarray(mono_dict[g]["densities"], float)[:usable_n][mask] for g in genes
+    })
+    mono_sd = pd.DataFrame({
+        g: np.asarray(mono_dict[g]["std"], float)[:usable_n][mask] for g in genes
+    })
+
+    # Optional smoothing AFTER slicing
+    if smooth:
+        mono_mean = mono_mean.apply(apply_savgol)
+
+    # Normalize AFTER slicing (per gene), and scale SD by same range
+    gmin = mono_mean.min(axis=0)
+    grng = (mono_mean.max(axis=0) - gmin).replace(0, np.nan)
+    mono_norm = (mono_mean - gmin) / grng
+    mono_sd_n = mono_sd.divide(grng, axis=1).fillna(0.0)
+
+    # x grid for interpolation/plotting: map LO→0 (V6), HI→1 (V1)
+    x_um = x_um_full[mask]
+    x_m = (x_um - LO) / max(1e-9, (HI - LO))
+
+    # --- in vivo ---
+    inv_raw = load_TPM_LCM_intestine_atlas()
+    inv_mean, inv_sd, _ = get_LCM_atlas_gene_subset_with_sd(inv_raw, genes)
+
+    # Arrange V6..V1, but be robust to missing columns
+    desired_cols = [f"Villus_{i}" for i in range(6, 0, -1)]
+    present_cols = [c for c in desired_cols if c in inv_mean.columns]
+    if not present_cols:
+        raise ValueError("No Villus_* columns available in the in-vivo atlas after filtering.")
+    inv_mean = inv_mean.reindex(columns=present_cols)
+    inv_sd   = inv_sd.reindex(columns=present_cols)
+
+    # intersect on genes present in invivo
+    common = [g for g in genes if g in inv_mean.index]
+    if not common:
+        raise ValueError("No overlap between requested genes and in-vivo atlas genes.")
+    mono_norm, mono_sd_n = mono_norm[common], mono_sd_n[common]
+    inv_mean, inv_sd = inv_mean.loc[common], inv_sd.loc[common]
+
+    # in-vivo axis on 0..1 (V6→V1), then interpolate to x_m
+    x_i = np.linspace(0, 1, inv_mean.shape[1])
+
+    rows = []
+    for g in common:
+        inv = inv_mean.loc[g].values
+        invs = inv_sd.loc[g].values
+        inv_i  = np.interp(x_m, x_i, inv)
+        invs_i = np.interp(x_m, x_i, invs)
+
+        # --- correlations (unweighted) ---
+        r = float(np.corrcoef(mono_norm[g].values, inv_i)[0, 1])
+        rho = float(stats.spearmanr(mono_norm[g].values, inv_i).correlation)
+
+        # optional weighted Pearson
+        r_w = np.nan
+        if do_weighted:
+            w = 1.0 / (np.square(mono_sd_n[g].values) + np.square(invs_i) + 1e-12)
+            xm = np.average(mono_norm[g].values, weights=w)
+            yi = np.average(inv_i, weights=w)
+            num = np.sum(w * (mono_norm[g].values - xm) * (inv_i - yi))
+            den = np.sqrt(np.sum(w * (mono_norm[g].values - xm)**2) * np.sum(w * (inv_i - yi)**2))
+            r_w = float(num / den) if den > 0 else np.nan
+
+        rows.append({"gene": g, "pearson": r, "spearman": rho, "pearson_weighted": r_w})
+
+        # --- verification plot: mean ± SD for both curves ---
+        fig, ax = plt.subplots(figsize=(4, 3.2))
+        ax.plot(x_m, mono_norm[g].values, label="Monolayer (16→61 µm)", linewidth=2)
+        ax.fill_between(x_m,
+                        np.clip(mono_norm[g].values - mono_sd_n[g].values, 0, 1),
+                        np.clip(mono_norm[g].values + mono_sd_n[g].values, 0, 1),
+                        alpha=0.25)
+        ax.plot(x_m, inv_i, label="In vivo (V6→V1)", linewidth=2)
+        ax.fill_between(x_m,
+                        np.clip(inv_i - invs_i, 0, 1),
+                        np.clip(inv_i + invs_i, 0, 1),
+                        alpha=0.25)
+        ax.set_xlim(0, 1); ax.set_ylim(0, 1.05)
+        ax.set_xticks([0, 1]); ax.set_xticklabels(["V6 (tip)", "V1 (bottom)"])
+        ax.set_ylabel("Normalized expression")
+        title_extra = f"(r={r:.2f}, ρ={rho:.2f})" if not do_weighted else f"(r={r:.2f}, ρ={rho:.2f}, r_w={r_w:.2f})"
+        ax.set_title(f"{g}  {title_extra}")
+        ax.legend(frameon=False)
+        fig.tight_layout()
+        fig.savefig(os.path.join(out_dir, f"{g}_overlay_16to61um_V6toV1.pdf"), format="pdf")
+        plt.close(fig)
+
+    if save_csv:
+        pd.DataFrame(rows).to_csv(
+            os.path.join(out_dir, "profile_correlations_16to61um_V6toV1.csv"),
+            index=False
+        )
+def compare_profiles_plotlogic_vs_invivo(
+    genes=None,
+    lo_um=16,            # window lower bound in µm (match your plotting fn by passing 16)
+    hi_um=61,            # window upper bound in µm (match your plotting fn by passing 61)
+    normalize=True,      # normalize AFTER slicing (shift to zero min, then /max)
+    smooth=True,         # apply adaptive Savitzky–Golay AFTER slicing (like your plots)
+    do_weighted=False,   # keep off initially
+    out_dir=None,
+    save_csv=True
+):
+    """
+    Build monolayer profiles EXACTLY like plot_density_profiles, then compare to in vivo.
+
+    Monolayer profile per gene:
+      - dens = result_dict[gene]['densities'][:-10]          # trim last 10 rings
+      - x_um = round(np.arange(1, n+1) * avg_iteration_width)
+      - window by lo_um..hi_um
+      - if normalize: shift to zero min, then divide by max (per gene)
+      - optional smoothing AFTER slicing
+
+    In vivo:
+      - get mean & SD (already min-max normalized per gene) via get_LCM_atlas_gene_subset_with_sd
+      - reorder to V6..V1
+      - interpolate onto monolayer x-grid mapped to [0,1] (lo_um→0, hi_um→1)
+
+    Output:
+      - Per-gene overlay PDFs with mean±SD
+      - CSV with Pearson, Spearman, and (optional) weighted Pearson
+    """
+    if out_dir is None:
+        out_dir = os.path.join(UNPERTURBED_DIR, "invivo_to_monolayer_expression_profiles")
+    os.makedirs(out_dir, exist_ok=True)
+
+    # --- load monolayer densities dict ---
+    mono_dict = _add_poisson_sd_to_result_dict(load_unperturbed_monolayer_gene_densities())
+
+    # choose genes (and normalize numpy.str_ → str)
+    if genes is None:
+        genes = sorted(mono_dict.keys())
+    else:
+        missing = [g for g in genes if g not in mono_dict]
+        if missing:
+            print(f"[compare_profiles_plotlogic_vs_invivo] Skipping genes not in monolayer densities: {missing}")
+        genes = [g for g in genes if g in mono_dict]
+        if not genes:
+            raise ValueError("None of the requested genes have monolayer erosion densities.")
+    genes = [str(g) for g in genes]
+
+    # --- replicate plot_density_profiles logic to build monolayer matrices ---
+    avg_width = load_iteration_average_width()
+    # common usable length across genes, then trim last 10 rings
+    usable_n = min(len(mono_dict[g]["densities"]) for g in genes)
+    usable_n = max(0, usable_n - 10)
+    if usable_n < 3:
+        raise ValueError("Not enough rings after trimming to perform comparison.")
+
+    # fake x axis by average width, then window to lo..hi (integers like your plotting fn)
+    x_um_full = np.round(np.arange(1, usable_n + 1) * avg_width).astype(int)
+    mask = (x_um_full >= int(lo_um)) & (x_um_full <= int(hi_um))
+    if not mask.any():
+        raise ValueError(f"No rings fall within {lo_um}–{hi_um} µm using the average-width axis.")
+    x_um = x_um_full[mask]  # this is the exact x your plotting fn would use for the window
+
+    # build monolayer mean & SD arrays using this mask
+    mono_mean = pd.DataFrame({g: np.asarray(mono_dict[g]["densities"], float)[:usable_n][mask] for g in genes})
+    mono_sd   = pd.DataFrame({g: np.asarray(mono_dict[g]["std"],       float)[:usable_n][mask] for g in genes})
+
+    # normalize AFTER slicing (exactly like your plotting fn)
+    if normalize:
+        # shift to zero min, then divide by max per gene
+        shifted = mono_mean.sub(mono_mean.min(axis=0), axis=1)
+        maxv = shifted.max(axis=0).replace(0, np.nan)
+        mono_norm = shifted.divide(maxv, axis=1).fillna(0.0)
+        mono_sd_n = mono_sd.divide(maxv, axis=1).fillna(0.0)
+    else:
+        mono_norm = mono_mean.copy()
+        mono_sd_n = mono_sd.copy()
+
+    # optional smoothing AFTER slicing (like your plotting fn)
+    if smooth:
+        mono_norm = mono_norm.apply(apply_savgol)
+
+    # map monolayer x to [0,1] so lo_um→0 (V6), hi_um→1 (V1)
+    x_m = (x_um - lo_um) / max(1e-9, (hi_um - lo_um))
+
+    # --- in vivo mean & SD (already min-max normalized per gene) ---
+    inv_raw = load_TPM_LCM_intestine_atlas()
+    inv_mean, inv_sd, _ = get_LCM_atlas_gene_subset_with_sd(inv_raw, genes)
+    desired_cols = [f"Villus_{i}" for i in range(6, 0, -1)]  # V6..V1
+    present_cols = [c for c in desired_cols if c in inv_mean.columns]
+    if not present_cols:
+        raise ValueError("No Villus_* columns available in the in-vivo atlas after filtering.")
+    inv_mean = inv_mean.reindex(columns=present_cols)
+    inv_sd   = inv_sd.reindex(columns=present_cols)
+
+    # intersect genes present in invivo
+    common = [g for g in genes if g in inv_mean.index]
+    if not common:
+        raise ValueError("No overlap between requested genes and in-vivo atlas genes.")
+    mono_norm, mono_sd_n = mono_norm[common], mono_sd_n[common]
+    inv_mean, inv_sd = inv_mean.loc[common], inv_sd.loc[common]
+
+    # interpolate in-vivo curves onto monolayer grid
+    x_i = np.linspace(0, 1, inv_mean.shape[1])  # V6→V1
+    rows = []
+
+    for g in common:
+        inv = inv_mean.loc[g].values
+        invs = inv_sd.loc[g].values
+        inv_i  = np.interp(x_m, x_i, inv)
+        invs_i = np.interp(x_m, x_i, invs)
+
+        # correlations (unweighted)
+        r = float(np.corrcoef(mono_norm[g].values, inv_i)[0, 1])
+        rho = float(stats.spearmanr(mono_norm[g].values, inv_i).correlation)
+
+        # optional weighted Pearson (down-weight high-variance bins)
+        r_w = np.nan
+        if do_weighted:
+            w = 1.0 / (np.square(mono_sd_n[g].values) + np.square(invs_i) + 1e-12)
+            xm = np.average(mono_norm[g].values, weights=w)
+            yi = np.average(inv_i, weights=w)
+            num = np.sum(w * (mono_norm[g].values - xm) * (inv_i - yi))
+            den = np.sqrt(np.sum(w * (mono_norm[g].values - xm)**2) * np.sum(w * (inv_i - yi)**2))
+            r_w = float(num / den) if den > 0 else np.nan
+
+        rows.append({"gene": g, "pearson": r, "spearman": rho, "pearson_weighted": r_w})
+
+        # verification plot: mean ± SD (monolayer uses your exact construction)
+        fig, ax = plt.subplots(figsize=(4, 3.2))
+        ax.plot(x_m, mono_norm[g].values, label=f"Monolayer ({lo_um}→{hi_um} µm)", linewidth=2)
+        ax.fill_between(x_m,
+                        np.clip(mono_norm[g].values - mono_sd_n[g].values, 0, 1),
+                        np.clip(mono_norm[g].values + mono_sd_n[g].values, 0, 1),
+                        alpha=0.25)
+        ax.plot(x_m, inv_i, label="In vivo (V6→V1)", linewidth=2)
+        ax.fill_between(x_m,
+                        np.clip(inv_i - invs_i, 0, 1),
+                        np.clip(inv_i + invs_i, 0, 1),
+                        alpha=0.25)
+        ax.set_xlim(0, 1); ax.set_ylim(0, 1.05)
+        ax.set_xticks([0, 1]); ax.set_xticklabels(["V6 (tip)", "V1 (bottom)"])
+        ax.set_ylabel("Normalized expression" if normalize else "Expression")
+        title_extra = f"(r={r:.2f}, ρ={rho:.2f})" if not do_weighted else f"(r={r:.2f}, ρ={rho:.2f}, r_w={r_w:.2f})"
+        ax.set_title(f"{g}  {title_extra}")
+        ax.legend(frameon=False)
+        fig.tight_layout()
+        fig.savefig(os.path.join(out_dir, f"{g}_overlay_{lo_um}to{hi_um}um_V6toV1.pdf"), format="pdf")
+        plt.close(fig)
+
+    if save_csv:
+        pd.DataFrame(rows).to_csv(
+            os.path.join(out_dir, f"profile_correlations_{lo_um}to{hi_um}um_V6toV1.csv"),
+            index=False
+        )
