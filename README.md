@@ -1,4 +1,4 @@
-# Resilience-of-spatial-structure-in-intestinal-organoids-revealed-by-spatial-transcriptomics
+# Self-Organization Through Local Cell-Cell Communication Drives Intestinal Epithelial Zonation
 This is the repo of the code containing the necessary functions to reproduce the analyses and figure panels presented in our paper.
 
 
