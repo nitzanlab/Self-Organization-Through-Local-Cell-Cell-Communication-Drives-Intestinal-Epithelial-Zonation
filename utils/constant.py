@@ -30,7 +30,7 @@ in order to load the data properly and be able to conduct the analyses and repro
 """
 
 ##CHANGE the directory path to where you have saved the directories above
-HOME_DIR = 'C:/Users/micha/thesis/code/data/intestinal_organoid/repo_dir/'
+HOME_DIR = '/Users/yaelheyman/Library/CloudStorage/GoogleDrive-yaelhei@gmail.com/My Drive/SPRINKLING/SG/sprinkling figures/repo_dir'
 
 
 #can change
@@ -169,6 +169,7 @@ INVIVO_ZONATION_GENES = ['Neat1','Malat1','Reg3g','Reg3b','Reg3a','Nlrp6','Lypd8
 
 genes_in_order_density_measure = ['Anxa5','Ada', 'Apoa4', 'Apoa1', 'Alpi', 'Aldob', 'Sis']
 genes_in_order_density_measure_reversed = ['Sis', 'Aldob', 'Alpi', 'Apoa1', 'Apoa4', 'Anxa5']
+EPHRIN_GENES = ['Epha2',  'Efna1','Epha1','Ephb2','Ephb3','Efnb2', 'Efnb1']
 
 REGENERATIVE_GENES = ['Ahnak','Msln','Yap1','Ly6a','Clu']
 REG_SUB_GROUP = ['Ahnak','Msln','Clu']
