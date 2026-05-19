@@ -56,6 +56,7 @@ NUM_POSITIONS_LCM_ATLAS = 5
 VILLUS_LOCATION_COLUMNS = [ 'V1_mean', 'V2_mean', 'V3_mean', 'V4_mean', 'V5_mean', 'V6_mean']
 
 AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','autonomous_zonation_figure_plots')
+PHARMACOLOGICAL_PERTURBATIONS_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','pharmacological_perturbations')
 CONTINUOUS_REGENERATIVE_RESPONSE_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','continuous_regenerative_figure_plots')
 ZONATION_PLASTICITY_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','zonation_plasticity_plots')
 NEIGHBORHOOD_ZONE_ADOPTION_FOLDER_PATH = os.path.join(os.getcwd(), 'paper','graphs','neighborhood_zone_adoption_plots')
@@ -216,6 +217,23 @@ ENTROPY_RANGES = [LOW_ENT_RANGE, HIGH_ENT_RANGE, VERY_HIGH_ENT_RANGE, UNIFORM_DI
 
 #GFP cells
 SPC_GFP_THRESH = 2
+
+##VISIUM (scale invariance) analysis
+# Set VISIUM_DATA_ROOT to the folder containing the downloaded GSE303705 dataset.
+# Expected structure: VISIUM_DATA_ROOT/GSE303705_RAW/  and  VISIUM_DATA_ROOT/rep2/day0/ etc.
+VISIUM_DATA_ROOT = '/Users/yaelheyman/Library/CloudStorage/GoogleDrive-yaelhei@gmail.com/My Drive/SPRINKLING/SG/mouse visium data/versi data set'
+SCALE_INVARIANCE_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper', 'graphs', 'scale_invariance_plots')
+
+##SPRINKLING (cell transplantation) raw data
+# Set SPRINKLING_NOV23_BASE_PATH to the sprinkling_nov_23 folder.
+SPRINKLING_NOV23_BASE_PATH = '/Users/yaelheyman/Library/CloudStorage/GoogleDrive-yaelhei@gmail.com/My Drive/SPRINKLING/SG/sprinkling_nov_23'
+
+##MONOLAYER raw figures (autonomous zonation panel)
+# Set MONOLAYER_RAW_DATA_ROOT to the pasadena_run_no_gel folder.
+# Expected sub-paths: 'all transcripts/transcrips_20240925.csv'
+MONOLAYER_RAW_DATA_ROOT = '/Users/yaelheyman/Library/CloudStorage/GoogleDrive-yaelhei@gmail.com/My Drive/SPRINKLING/SG/pasadena_run_no_gel'
+# Set MONOLAYER_BACKGROUND_IMAGE to the hyb_background_aligned.tiff file.
+MONOLAYER_BACKGROUND_IMAGE = '/Users/yaelheyman/RajLab Dropbox/Yael Heyman/shared_yael/sg/pasadena run no gel/roi_1/hyb_background_aligned.tiff'
 
 def set_style():
  plt.rcParams.update(plt.rcParamsDefault)  # Reset to default

@@ -37,7 +37,22 @@ def plot_all_autonomous_figure_plots(saved_datasets=False):
     plot_density_profiles(result_dict, genes_in_order_density_measure, spread_plots=True, normalize=True)
     #panel h: heatmap comparison in vivo reconstruction to monolayer, erosion measured expression from edge to interior
     expression_profile_heatmap_comparison_invivo_gene_density(genes_in_order_density_measure)
-    expression_profile_heatmap_invivo(EPHRIN_GENES)
+    from utils.constant import PHARMACOLOGICAL_PERTURBATIONS_PLOTS_FOLDER_PATH
+    expression_profile_heatmap_invivo(EPHRIN_GENES,
+                                      save_name="in_vivo_epha2_expression.pdf",
+                                      output_dir=PHARMACOLOGICAL_PERTURBATIONS_PLOTS_FOLDER_PATH)
+
+    from paper.plotScripts.crop_monolayer import plot_monolayer_raw_figures
+    print("\nGenerating raw monolayer crop figures …")
+    plot_monolayer_raw_figures()
+
+    from paper.plotScripts.top_bottom_zonation import plot_top_bottom_villus_expression
+    print("\nGenerating top/bottom villus expression figure …")
+    plot_top_bottom_villus_expression()
+
+    from paper.plotScripts.cluster_monolayer import plot_monolayer_cluster_identity
+    print("\nGenerating monolayer cluster identity figure …")
+    plot_monolayer_cluster_identity()
 
 def plot_gene_groups_expression_on_wt_monolayer(gene_group1:list, gene_group2:list, group1_name:str, group2_name:str,zoned=False,zone_x=None, zone_y=None, save=False):
     """
@@ -142,6 +157,7 @@ def expression_profile_heatmap_invivo(
     title=r"$\it{In\ Vivo}$ Expression",
     save_name="invivo_expression_heatmap.pdf",
     flip_top_to_bottom=True,
+    output_dir=None,
 ):
     """
     Plot a heatmap of in vivo reconstruction ONLY (no monolayer checks).
@@ -207,8 +223,10 @@ def expression_profile_heatmap_invivo(
     plt.tight_layout()
 
     # Save
-    os.makedirs(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, exist_ok=True)
-    out_path = os.path.join(AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH, save_name)
+    from utils.constant import PHARMACOLOGICAL_PERTURBATIONS_PLOTS_FOLDER_PATH
+    _out_dir = output_dir if output_dir else AUTONOMOUS_ZONATION_PLOTS_FOLDER_PATH
+    os.makedirs(_out_dir, exist_ok=True)
+    out_path = os.path.join(_out_dir, save_name)
     plt.savefig(out_path, format='pdf')
     plt.show()
     plt.close()

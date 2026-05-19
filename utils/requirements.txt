@@ -8,3 +8,11 @@ novosparc
 seaborn
 scikit-learn
 scikit-image
+opencv-python
+imageio
+Pillow
+tifffile
+geopandas
+shapely
+rasterio
+git+https://github.com/arjunrajlaboratory/SGanalysis.git
