@@ -238,18 +238,18 @@ MONOLAYER_RAW_DATA_ROOT = '/Users/yaelheyman/Library/CloudStorage/GoogleDrive-ya
 MONOLAYER_BACKGROUND_IMAGE = '/Users/yaelheyman/RajLab Dropbox/Yael Heyman/shared_yael/sg/pasadena run no gel/roi_1/hyb_background_aligned.tiff'
 
 ##PHARMACOLOGICAL PERTURBATION raw data
-_PERT_SPRINKLING = '/Users/yaelheyman/RajLab Dropbox/Yael Heyman/shared_yael/sprinkling'
+_PERT_BASE = '/Users/yaelheyman/RajLab Dropbox/Yael Heyman/shared_yael/Zonation'
 PHARMACOLOGICAL_PERTURBATION_EXPERIMENT_BASES = [
-    os.path.join(_PERT_SPRINKLING, '20250529_monolayer_conditions_re', 'different_conditions'),
-    os.path.join(_PERT_SPRINKLING, '20250718_monolayer_conditions',    'different_conditions'),
-    os.path.join(_PERT_SPRINKLING, '20250719_monolayer_conditions',    'different_conditions'),
+    os.path.join(_PERT_BASE, '20250529_monolayer_conditions_re', 'different_conditions'),
+    os.path.join(_PERT_BASE, '20250718_monolayer_conditions',    'different_conditions'),
+    os.path.join(_PERT_BASE, '20250719_monolayer_conditions',    'different_conditions'),
 ]
 PHARMACOLOGICAL_PERTURBATION_PANEL_F_POLYGONS_PATH = os.path.join(
-    _PERT_SPRINKLING, '20250529_monolayer_conditions_re', 'different_conditions',
+    _PERT_BASE, '20250529_monolayer_conditions_re', 'different_conditions',
     'ENR', 'polygons_by_frame', 'frame_2_polygons.json'
 )
 PHARMACOLOGICAL_PERTURBATION_PANEL_F_CSV_PATH = os.path.join(
-    _PERT_SPRINKLING, '20250529_monolayer_conditions_re', 'different_conditions',
+    _PERT_BASE, '20250529_monolayer_conditions_re', 'different_conditions',
     'ENR', 'processedData', 'erosion_analysis',
     'frame_3', 'num_iterations_11', 'cell_by_gene_with_ring.csv'
 )

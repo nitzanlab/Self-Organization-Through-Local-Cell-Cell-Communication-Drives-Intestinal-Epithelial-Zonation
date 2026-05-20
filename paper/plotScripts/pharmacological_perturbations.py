@@ -219,8 +219,8 @@ def plot_perturbation_ring_image(output_dir=None,
     polys = _load_polygons(_poly)
 
     df    = pd.read_csv(_csv)
-    xcol  = next(c for c in df.columns if c.strip().lower().endswith("/centroid/x"))
-    ycol  = next(c for c in df.columns if c.strip().lower().endswith("/centroid/y"))
+    xcol  = next(c for c in df.columns if "centroid" in c.lower() and c.strip().lower().replace(" ", "").endswith("/x"))
+    ycol  = next(c for c in df.columns if "centroid" in c.lower() and c.strip().lower().replace(" ", "").endswith("/y"))
     cells_xy = df[[xcol, ycol]].to_numpy(float)
     rings    = df["Ring"].to_numpy()
 
