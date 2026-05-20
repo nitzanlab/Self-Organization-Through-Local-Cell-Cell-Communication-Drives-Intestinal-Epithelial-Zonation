@@ -4,6 +4,7 @@ from paper.plotScripts.zonation_plasticity import *
 from paper.plotScripts.neighborhood_zone_adoption import *
 from paper.plotScripts.continuous_regenerative_response import *
 from paper.plotScripts.plot_rep_profiles import plot_scale_invariance_figures
+from paper.plotScripts.pharmacological_perturbations import plot_all_pharmacological_perturbation_plots
 
 def plot_all_figures():
     plot_all_autonomous_figure_plots(saved_datasets=False) #first time running this function, saved_datasets
@@ -15,3 +16,4 @@ def plot_all_figures():
     plot_all_neighborhood_zone_adoption_plots()
     plot_all_continuous_regenerative_response_plots()
     plot_scale_invariance_figures()  # Figure 2: scale invariance (Visium, rep2 sub-ROI)
+    plot_all_pharmacological_perturbation_plots()  # Figure 4: pharmacological perturbations

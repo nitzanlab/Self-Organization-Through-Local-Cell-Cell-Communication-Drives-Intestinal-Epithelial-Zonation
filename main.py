@@ -16,6 +16,7 @@ if __name__ == '__main__':
    # plot_all_continuous_regenerative_response_plots()
 plot_all_autonomous_figure_plots(saved_datasets=True)
 # plot_zonation_plasticity_plots(calculate=False)
+# plot_all_pharmacological_perturbation_plots()
 # plot_all_neighborhood_zone_adoption_plots()
 # plot_all_continuous_regenerative_response_plots()
 # plot_scale_invariance_figures()
