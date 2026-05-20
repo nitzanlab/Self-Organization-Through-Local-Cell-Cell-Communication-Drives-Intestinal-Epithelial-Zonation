@@ -24,9 +24,11 @@ import os
 import re
 import glob
 import json
+import colorsys
 import numpy as np
 import pandas as pd
 import matplotlib
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as MplPolygon, Patch
 from matplotlib.lines import Line2D
@@ -44,7 +46,7 @@ try:
     _DEFAULT_PANEL_F_POLY  = PHARMACOLOGICAL_PERTURBATION_PANEL_F_POLYGONS_PATH
     _DEFAULT_PANEL_F_CSV   = PHARMACOLOGICAL_PERTURBATION_PANEL_F_CSV_PATH
 except ImportError:
-    _SPRINKLING = "/Users/yaelheyman/RajLab Dropbox/Yael Heyman/shared_yael/sprinkling"
+    _SPRINKLING = "/Users/yaelheyman/RajLab Dropbox/Yael Heyman/shared_yael/Zonation"
     _DEFAULT_OUT_DIR = os.path.join(os.getcwd(), "paper", "graphs", "pharmacological_perturbations")
     _DEFAULT_EXP_BASES = [
         os.path.join(_SPRINKLING, "20250529_monolayer_conditions_re", "different_conditions"),
@@ -88,6 +90,14 @@ _COND_COLORS = {
     "ALW LOW":  "#17becf",
     "R0 HIGH":  "#2ca02c",
 }
+_COND_DISPLAY = {
+    "ENR":      "Standard media",
+    "LDN LOW":  "BMP inhibitor",
+    "IWP LOW":  "WNT inhibitor",
+    "ALW LOW":  "Ephrin inhibitor",
+    "R0 HIGH":  "Notch inhibitor",
+}
+_COND_ORDER = ["ENR", "LDN LOW", "IWP LOW", "ALW LOW", "R0 HIGH"]
 _AVG_RING_WIDTH_UM = 8.6
 
 _ITER_DIR_GLOB    = os.path.join("processedData", "erosion_analysis", "overview_plots_iterations_*")
@@ -96,6 +106,23 @@ _COUNTS_CSV_NAME  = "threshold_histogram_counts_per_frame.csv"
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
+def _shades_of(base_color, n, lightest=0.65, darkest=0.0):
+    """Return n shades of base_color going from light to dark.
+
+    lightest/darkest control how much whiteness is added (0=none, 1=fully white).
+    """
+    r, g, b = mcolors.to_rgb(base_color)
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    shades = []
+    for i in range(n):
+        t = i / max(n - 1, 1)         # 0 → lightest, 1 → darkest
+        blend = lightest + t * (darkest - lightest)
+        new_l = min(1.0, l + blend * (1.0 - l))
+        r2, g2, b2 = colorsys.hls_to_rgb(h, new_l, s)
+        shades.append((r2, g2, b2))
+    return shades
+
 
 def _exp_key(base_path):
     tail = os.path.basename(base_path.rstrip(os.sep))
@@ -287,99 +314,112 @@ def plot_perturbation_ring_image(output_dir=None,
 # ── Panel E: per-condition grouped bar chart ─────────────────────────────────
 
 def plot_perturbation_cell_count_bars(output_dir=None, experiment_bases=None):
-    """Panel E: grouped bar charts (Sis/Msln/Apoa4 × 3 experiments) per condition."""
+    """Panel E: all conditions in one combined row figure, shaded by experiment."""
     _out   = output_dir        or _DEFAULT_OUT_DIR
     _bases = experiment_bases  or _DEFAULT_EXP_BASES
     os.makedirs(_out, exist_ok=True)
 
-    per_exp_map = _build_canonical_map(_bases)
-    all_conds   = sorted({c for m in per_exp_map.values() for c in m} & _KEEP_CONDITIONS)
-    exp_order   = [_exp_key(b) for b in _bases]
+    per_exp_map   = _build_canonical_map(_bases)
+    available     = {c for m in per_exp_map.values() for c in m} & _KEEP_CONDITIONS
+    conds_ordered = [c for c in _COND_ORDER if c in available]
+    exp_order     = [_exp_key(b) for b in _bases]
+
+    # Collect all data: iter_num -> cond -> exp_key -> DataFrame
+    all_data = {}
+    for cond in conds_ordered:
+        exp_iters = {}
+        for base in _bases:
+            key      = _exp_key(base)
+            raw_list = per_exp_map.get(key, {}).get(cond, [])
+            merged   = {}
+            for raw in raw_list:
+                for k, v in _find_iteration_dirs(base, raw).items():
+                    merged.setdefault(k, v)
+            if merged:
+                exp_iters[key] = merged
+
+        for key, imap in exp_iters.items():
+            for iter_num, iter_dir in imap.items():
+                counts_path = os.path.join(iter_dir, _COUNTS_CSV_NAME)
+                if not os.path.isfile(counts_path):
+                    continue
+                try:
+                    dfc = pd.read_csv(counts_path)
+                    dfc = dfc[[g for g in _GENES if g in dfc.columns]]
+                    all_data.setdefault(iter_num, {}).setdefault(cond, {})[key] = dfc
+                except Exception:
+                    pass
 
     _saved_rc = dict(matplotlib.rcParams)
     try:
         matplotlib.rcParams.update({
             "pdf.fonttype": 42, "ps.fonttype": 42, "text.usetex": False,
-            "axes.labelsize": 8, "xtick.labelsize": 8, "ytick.labelsize": 8,
+            "axes.labelsize": 7, "xtick.labelsize": 7, "ytick.labelsize": 7,
             "font.family": "Arial",
         })
 
-        for cond in all_conds:
-            exp_iters = {}
-            for base in _bases:
-                key      = _exp_key(base)
-                raw_list = per_exp_map.get(key, {}).get(cond, [])
-                merged   = {}
-                for raw in raw_list:
-                    for k, v in _find_iteration_dirs(base, raw).items():
-                        merged.setdefault(k, v)
-                if merged:
-                    exp_iters[key] = merged
-
-            if not exp_iters:
+        for iter_num, cond_data in sorted(all_data.items()):
+            conds_in_plot = [c for c in conds_ordered if c in cond_data]
+            if not conds_in_plot:
                 continue
 
-            all_iter_nums = sorted({it for d in exp_iters.values() for it in d})
-            for iter_num in all_iter_nums:
-                per_exp_counts = {}
-                for base in _bases:
-                    key      = _exp_key(base)
-                    iter_dir = exp_iters.get(key, {}).get(iter_num)
-                    if not iter_dir:
-                        continue
-                    counts_path = os.path.join(iter_dir, _COUNTS_CSV_NAME)
-                    if not os.path.isfile(counts_path):
-                        continue
-                    try:
-                        dfc  = pd.read_csv(counts_path)
-                        dfc  = dfc[[c for c in _GENES if c in dfc.columns]]
-                        per_exp_counts[key] = dfc
-                    except Exception:
-                        pass
+            n    = len(conds_in_plot)
+            fig, axes = plt.subplots(1, n, figsize=(1.6 * n, 2.3), sharey=True)
+            if n == 1:
+                axes = [axes]
 
-                if not per_exp_counts:
-                    continue
+            fig.suptitle("Mean cell counts under different perturbations",
+                         fontsize=8, y=1.03)
 
-                means = {g: [] for g in _GENES}
-                stds  = {g: [] for g in _GENES}
-                for key in exp_order:
+            width = 0.22
+            x     = np.arange(len(_GENES))
+
+            for ax_idx, (ax, cond) in enumerate(zip(axes, conds_in_plot)):
+                shades         = _shades_of(_COND_COLORS.get(cond, "gray"), len(_bases))
+                per_exp_counts = cond_data[cond]
+
+                for i, (key, shade) in enumerate(zip(exp_order, shades)):
                     dfc = per_exp_counts.get(key)
+                    means_, stds_ = [], []
                     for g in _GENES:
                         if dfc is None or g not in dfc.columns:
-                            means[g].append(np.nan)
-                            stds[g].append(np.nan)
+                            means_.append(np.nan); stds_.append(np.nan)
                         else:
-                            means[g].append(dfc[g].mean())
-                            stds[g].append(dfc[g].std())
+                            means_.append(dfc[g].mean()); stds_.append(dfc[g].std())
 
-                fig, ax = plt.subplots(figsize=(2.3, 2))
-                ax.tick_params(labelsize=8)
-                ax.yaxis.set_major_formatter(lambda val, _: f"{val:.0e}")
-                width = 0.22
-                x = np.arange(len(_GENES))
-                for i, key in enumerate(exp_order):
                     ax.bar(
-                        x + (i - (len(exp_order) - 1) / 2) * width,
-                        [means[g][i] for g in _GENES],
-                        width=width,
-                        yerr=[stds[g][i] for g in _GENES],
-                        capsize=4,
+                        x + (i - (len(_bases) - 1) / 2) * width,
+                        means_, width=width,
+                        yerr=stds_, capsize=3,
                         label=_EXP_LABELS.get(key, key),
-                        color=_EXP_COLORS.get(key),
+                        color=shade,
+                        error_kw=dict(elinewidth=0.8, capthick=0.8),
                     )
-                ax.set_xticks(x)
-                ax.set_xticklabels(_GENES, rotation=30, ha="right", fontsize=8)
-                ax.set_ylabel("Number of cells", fontsize=8)
-                ax.set_title(cond, fontsize=8)
-                ax.set_ylim(0, 1e4)
-                ax.grid(axis="y", alpha=0.3)
-                fig.tight_layout()
 
-                cond_slug   = cond.replace(" ", "_").lower()
-                out_path    = os.path.join(_out, f"cell_counts_{cond_slug}_iter{iter_num}.pdf")
-                fig.savefig(out_path, bbox_inches="tight")
-                plt.close(fig)
-                print(f"  Saved: {out_path}")
+                ax.set_xticks(x)
+                ax.set_xticklabels(_GENES, rotation=30, ha="right", fontsize=7)
+                ax.set_title(_COND_DISPLAY.get(cond, cond), fontsize=7)
+                ax.tick_params(labelsize=7)
+                ax.yaxis.set_major_formatter(lambda val, _: f"{val:.0e}")
+                ax.set_ylim(0, 1e4)
+                ax.spines[["top", "right"]].set_visible(False)
+
+                if ax_idx == 0:
+                    ax.set_ylabel("Number of cells", fontsize=7)
+
+                legend_handles = [
+                    Patch(color=s, label=_EXP_LABELS.get(k, k))
+                    for k, s in zip(exp_order, shades)
+                ]
+                ax.legend(handles=legend_handles, fontsize=5, frameon=False,
+                          loc="upper right", handlelength=1, handletextpad=0.3,
+                          borderpad=0.2)
+
+            fig.tight_layout()
+            out_path = os.path.join(_out, f"cell_counts_all_conditions_iter{iter_num}.pdf")
+            fig.savefig(out_path, bbox_inches="tight")
+            plt.close(fig)
+            print(f"  Saved: {out_path}")
     finally:
         matplotlib.rcParams.update(_saved_rc)
 
@@ -393,10 +433,9 @@ def plot_perturbation_double_positive(output_dir=None, experiment_bases=None):
     _bases = experiment_bases  or _DEFAULT_EXP_BASES
     os.makedirs(_out, exist_ok=True)
 
-    per_exp_map = _build_canonical_map(_bases)
-    conds_sorted = sorted(
-        {c for m in per_exp_map.values() for c in m} & _KEEP_CONDITIONS
-    )
+    per_exp_map   = _build_canonical_map(_bases)
+    available     = {c for m in per_exp_map.values() for c in m} & _KEEP_CONDITIONS
+    conds_sorted  = [c for c in _COND_ORDER if c in available]
 
     combined_by_iter = {}
     for cond in conds_sorted:
@@ -440,13 +479,21 @@ def plot_perturbation_double_positive(output_dir=None, experiment_bases=None):
             if not cond_dict:
                 continue
 
-            fig, ax = plt.subplots(figsize=(3, 2.5))
+            fig, ax = plt.subplots(figsize=(6, 4))
             ax.tick_params(labelsize=8)
+            ax.set_title("Percent Double-Positive", fontsize=9)
+
+            # Pre-compute shades per condition (same scheme as Panel E)
+            cond_shades = {
+                c: _shades_of(_COND_COLORS.get(c, "gray"), len(_bases))
+                for c in conds_sorted
+            }
+            _exp_order = [_exp_key(b) for b in _bases]
 
             for cond in conds_sorted:
                 exp_map = cond_dict.get(cond, {})
-                color   = _COND_COLORS.get(cond, "gray")
-                for base in _bases:
+                shades  = cond_shades[cond]
+                for i, base in enumerate(_bases):
                     key = _exp_key(base)
                     dfp = exp_map.get(key)
                     if dfp is None or dfp.empty:
@@ -456,25 +503,27 @@ def plot_perturbation_double_positive(output_dir=None, experiment_bases=None):
                         dfp["%Double_Positive"].values,
                         marker=_MARKERS.get(key, "o"),
                         linestyle="-",
-                        color=color,
+                        color=shades[i],
                         linewidth=1.2,
                         markersize=3.5,
                     )
 
             ax.set_xlabel("Distance from monolayer edge (µm)", fontsize=8)
-            ax.set_ylabel("Apoa4⁺ & Sis⁺ / Apoa4⁺ [%]", fontsize=8)
+            ax.set_ylabel("Apoa4+ & Sis+ / Apoa4+ [%]", fontsize=8)
             ax.set_ylim(0, 100)
             ax.grid(True, alpha=0.3)
+            ax.spines[["top", "right"]].set_visible(False)
 
+            # Conditions legend: show darkest shade (Exp 3) as representative
             cond_handles = [
-                Line2D([0], [0], color=_COND_COLORS.get(c, "gray"), lw=2, label=c)
+                Line2D([0], [0], color=cond_shades[c][-1], lw=2,
+                       label=_COND_DISPLAY.get(c, c))
                 for c in conds_sorted if c in cond_dict
             ]
-            exp_order = [_exp_key(b) for b in _bases]
             exp_handles = [
                 Line2D([0], [0], marker=_MARKERS.get(k, "o"), color="black",
                        linestyle="None", label=_EXP_LABELS.get(k, k), markersize=5)
-                for k in exp_order
+                for k in _exp_order
             ]
             leg1 = ax.legend(handles=cond_handles, title="Conditions", fontsize=6,
                              title_fontsize=7, frameon=False,
