@@ -227,6 +227,8 @@ SCALE_INVARIANCE_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper', 'graphs'
 ##SPRINKLING (cell transplantation) raw data
 # Set SPRINKLING_NOV23_BASE_PATH to the sprinkling_nov_23 folder.
 SPRINKLING_NOV23_BASE_PATH = '/Users/yaelheyman/Library/CloudStorage/GoogleDrive-yaelhei@gmail.com/My Drive/SPRINKLING/SG/sprinkling_nov_23'
+SPRINKLING_BG_72 = '/Users/yaelheyman/RajLab Dropbox/Yael Heyman/shared_yael/sg/sprinkling nov 23/72 hr/roi_1/hyb_background_aligned.tiff'
+SPRINKLING_BG_12 = '/Users/yaelheyman/RajLab Dropbox/Yael Heyman/shared_yael/sg/sprinkling nov 23/12 hr/roi_2/hyb_background_aligned.tiff'
 
 ##MONOLAYER raw figures (autonomous zonation panel)
 # Set MONOLAYER_RAW_DATA_ROOT to the pasadena_run_no_gel folder.

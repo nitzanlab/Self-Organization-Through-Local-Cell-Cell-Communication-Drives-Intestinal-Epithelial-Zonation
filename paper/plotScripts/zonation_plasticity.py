@@ -9,13 +9,21 @@ def plot_zonation_plasticity_plots(calculate = True):
         calculate_and_save_moransi_on_monolayer(save=True)
 
     ###panel a: schematic diagram created in BioRender.com
-    ###panel b and c: raw image example #TODO Yael
+    ###panel b and c: transplanted cell neighborhoods (12hr and 72hr)
+    from paper.plotScripts.transplant_neighborhoods import plot_transplant_neighborhoods
+    print("\nGenerating transplanted cell neighborhood images …")
+    plot_transplant_neighborhoods()
     ###panel d and e : neighbor correlation scatter (Aldob, 12hr and 72hr)
     from paper.plotScripts.neighbor_correlation_scatter import plot_neighbor_correlation_scatter
     print("\nGenerating neighbor correlation scatter plots …")
     plot_neighbor_correlation_scatter()
 
-    ###panel f: gene expression neighborhood correlation in inserted cells
+    ###panel f: neighbor correlation difference bar plot (72hr - 12hr), colored by Moran's I
+    from paper.plotScripts.neighbor_correlation_bar import plot_neighbor_correlation_bar
+    print("\nGenerating neighbor correlation bar plot …")
+    plot_neighbor_correlation_bar()
+
+    ###panel g: gene expression neighborhood correlation in inserted cells
     plot_gene_correlation_histograms_GFP_to_wt(len(ORGANOID_GENE_NAMES_NOGFP),'all_paneled_genes')
     plot_gene_correlation_histograms_GFP_to_wt(20,
                                             'top_20_moransi_genes')
