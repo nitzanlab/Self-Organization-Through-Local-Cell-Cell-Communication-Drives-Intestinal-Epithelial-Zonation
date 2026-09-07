@@ -112,8 +112,8 @@ def expression_profile_heatmap_comparison_invivo_gene_density(gene_set):
     transcript_heatmap = sns.heatmap(gene_density_normalized.iloc[:,:-1], vmin=0, vmax=1, cmap='plasma')
     colorbar = transcript_heatmap.collections[0].colorbar
     colorbar.set_label('Normalized Gene Expression')
-    avg_iteration_width = load_iteration_average_width()
-    dist_to_edge = np.round(np.arange(4, 4+gene_density_df.shape[0]) * avg_iteration_width, 0).astype(int)
+    dist_to_edge = np.round(
+        (np.arange(4, 4 + gene_density_df.shape[0]) + 0.5) * RING_STEP_UM, 0).astype(int)
     plt.xticks(np.arange(gene_density_df.shape[0]), dist_to_edge)
     plt.xlabel('Distance to Monolayer Edge(μm)')
     plt.xticks(rotation=45)

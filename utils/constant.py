@@ -90,6 +90,15 @@ XY_SPACING = 10
 EROSION_STEP = 5
 NUM_ITERATIONS = 30
 PIXEL2NM = 107.11
+
+# Erosion advances by a constant amount per iteration (disk(EROSION_STEP)).
+# Measured directly from monolayer_ring_masks.pkl: the median distance-to-edge of
+# successive rings increases by a constant 4.86 px across all 30 rings.
+# Do NOT use mean(iteration_widths): calculate_iteration_width() estimates ring
+# width from the FIRST connected component only and returns 0 on degenerate
+# geometry, so its mean underestimates the true step by ~27%.
+RING_STEP_PX = 4.86
+RING_STEP_UM = RING_STEP_PX * XY_SPACING * PIXEL2NM / 1000   # = 5.206 um
 EROSION_RINGS_ZOOM_IN = [1500, 2000]
 
 
@@ -223,6 +232,14 @@ SPC_GFP_THRESH = 2
 # Expected structure: VISIUM_DATA_ROOT/GSE303705_RAW/  and  VISIUM_DATA_ROOT/rep2/day0/ etc.
 VISIUM_DATA_ROOT = '/Users/yaelheyman/Library/CloudStorage/GoogleDrive-yaelhei@gmail.com/My Drive/SPRINKLING/SG/mouse visium data/versi data set'
 SCALE_INVARIANCE_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper', 'graphs', 'scale_invariance_plots')
+
+# Genes of interest for the scale-invariance figure (Visium, Figure 2).
+# SCALE_INVARIANCE_PANEL_D_GENES are the genes shown in Panel D (expression profiles).
+SCALE_INVARIANCE_PANEL_D_GENES = ["Ada", "Apoa4", "Plac8", "Mki67"]
+# Broader set used for scale-invariance scoring / exploration.
+SCALE_INVARIANCE_GENES_OF_INTEREST = [
+    "Ada", "Apoa4", "Plac8", "Mki67", "Enpep", "Apoa1", "Aldob", "Sis",
+]
 
 ##SPRINKLING (cell transplantation) raw data
 # Set SPRINKLING_NOV23_BASE_PATH to the sprinkling_nov_23 folder.

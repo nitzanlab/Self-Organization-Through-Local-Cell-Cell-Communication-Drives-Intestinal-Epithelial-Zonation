@@ -646,7 +646,7 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
     import matplotlib.pyplot as plt
 
     # Window in physical units (µm)
-    LO, HI = 15, 70
+    LO, HI = 18, 86      # same rings as before, on the corrected axis
 
     # If gene_names is None, plot all genes
     if gene_names is None:
@@ -657,9 +657,9 @@ def plot_density_profiles(result_dict, gene_names=None, normalize=False, spread_
         return
 
     # helper: distance axis in µm given number of rings
-    avg_iteration_width = load_iteration_average_width()
     def _dist_axis(n):
-        return np.round(np.arange(1, n + 1) * avg_iteration_width).astype(int)
+        # ring k spans [k*step, (k+1)*step); its representative depth is the centre
+        return np.round((np.arange(n) + 0.5) * RING_STEP_UM).astype(int)
 
     if spread_plots:
         # Create stacked subplots with shared X-axis
@@ -780,9 +780,9 @@ def plot_density_profiles_with_std(
     import matplotlib.pyplot as plt
 
     # helper: average-width distance axis (identical to your logic)
-    avg_iteration_width = load_iteration_average_width()
     def _dist_axis(n):
-        return np.round(np.arange(1, n + 1) * avg_iteration_width).astype(int)
+        # ring k spans [k*step, (k+1)*step); its representative depth is the centre
+        return np.round((np.arange(n) + 0.5) * RING_STEP_UM).astype(int)
 
     # ensure genes list
     if gene_names is None:
@@ -925,9 +925,9 @@ def compare_monolayer_profiles_to_invivo(
     os.makedirs(out_dir, exist_ok=True)
 
     # --- helper from your plotting fn ---
-    avg_iteration_width = load_iteration_average_width()
     def _dist_axis(n):
-        return np.round(np.arange(1, n + 1) * avg_iteration_width).astype(int)
+        # ring k spans [k*step, (k+1)*step); its representative depth is the centre
+        return np.round((np.arange(n) + 0.5) * RING_STEP_UM).astype(int)
 
     # --- determine genes ---
     if genes is None:
