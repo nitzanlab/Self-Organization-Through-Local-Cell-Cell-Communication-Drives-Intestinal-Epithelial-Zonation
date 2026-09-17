@@ -44,8 +44,11 @@ _GFP_CELLS_72 = [5259, 7872, 9502]   # panel C (72 hr)
 _GFP_CELLS_12 = [7328, 8172, 1501]   # panel B (12 hr)
 
 # ── imaging parameters ─────────────────────────────────────────────────────
-_DAPI_CH       = 3
-_GFP_CH        = 2
+# The bundled background TIFFs keep only the two channels these plots read,
+# stored in source order: acquisition ch2 (GFP) -> 0, ch3 (DAPI) -> 1. The full
+# 4-channel acquisitions are archived separately.
+_DAPI_CH       = 1
+_GFP_CH        = 0
 _GENE          = 'Aldob'
 _NN_RADIUS     = 350
 _PIXEL_UM      = 0.10711

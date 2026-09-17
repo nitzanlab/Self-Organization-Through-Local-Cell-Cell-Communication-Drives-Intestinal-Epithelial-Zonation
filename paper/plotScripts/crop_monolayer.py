@@ -37,6 +37,10 @@ except ImportError:
         os.getcwd(), 'paper', 'graphs', 'autonomous_zonation_figure_plots'
     )
 
+# Index of the retained channel inside the bundled background TIFF. The bundled
+# copy keeps only acquisition channel 3, the one these plots read.
+_BG_CH = 0
+
 _GENE_COLOR_DICT = {
     'Ada':   [0.58, 0,    0.83],
     'Lyz1':  [1,    0,    1   ],
@@ -96,6 +100,10 @@ def _show_neighborhood_with_adjusted_scalebar(
     spot_coords = pd.concat(spot_coords_list).reset_index(drop=True)
 
     image = tiff.imread(image_path)   # shape (C, Y, X)
+    # The bundled background keeps only the one channel this plot reads
+    # (acquisition ch3), so tifffile returns a bare 2-D plane for it.
+    if image.ndim == 2:
+        image = image[np.newaxis, ...]
     pad_y = (max_y - min_y) / 4
     pad_x = (max_x - min_x) / 4
     ry0 = max(0,              int(min_y - pad_y))
@@ -109,7 +117,7 @@ def _show_neighborhood_with_adjusted_scalebar(
     )
     spot_coords_in_range = spot_coords[in_range]
 
-    gray = np.array(image[3, ry0:ry1, rx0:rx1])
+    gray = np.array(image[_BG_CH, ry0:ry1, rx0:rx1])
     norm = np.clip(
         (gray - gray.min()) / (gray.max() - gray.min()) * 255 * brightness_factor,
         0, 255,
