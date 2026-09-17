@@ -43,16 +43,31 @@ def plot_all_autonomous_figure_plots(saved_datasets=False):
                                       output_dir=PHARMACOLOGICAL_PERTURBATIONS_PLOTS_FOLDER_PATH)
 
     from paper.plotScripts.crop_monolayer import plot_monolayer_raw_figures
-    print("\nGenerating raw monolayer crop figures …")
-    plot_monolayer_raw_figures()
-
     from paper.plotScripts.top_bottom_zonation import plot_top_bottom_villus_expression
-    print("\nGenerating top/bottom villus expression figure …")
-    plot_top_bottom_villus_expression()
-
     from paper.plotScripts.cluster_monolayer import plot_monolayer_cluster_identity
-    print("\nGenerating monolayer cluster identity figure …")
-    plot_monolayer_cluster_identity()
+
+    # Panels B/D, E and C are independent: one missing input must not drop the others.
+    remaining = [
+        ("B,D: raw monolayer crops", plot_monolayer_raw_figures),
+        ("E: top/bottom villus expression", plot_top_bottom_villus_expression),
+        ("C: monolayer cluster identity", plot_monolayer_cluster_identity),
+    ]
+    failed = []
+    for label, fn in remaining:
+        print("\nGenerating Panel %s …" % label)
+        try:
+            fn()
+        except Exception as exc:
+            failed.append((label, exc))
+            print("  SKIPPED Panel %s — %s: %s" % (label, type(exc).__name__, exc))
+    if failed:
+        import warnings
+        for label, exc in failed:
+            warnings.warn("Figure 1 Panel %s not generated (%s: %s)"
+                          % (label, type(exc).__name__, exc), RuntimeWarning)
+        print("\n%d of %d Figure 1 sub-panels could not be generated:" % (len(failed), len(remaining)))
+        for label, exc in failed:
+            print("  - Panel %s (%s)" % (label, type(exc).__name__))
 
 def plot_gene_groups_expression_on_wt_monolayer(gene_group1:list, gene_group2:list, group1_name:str, group2_name:str,zoned=False,zone_x=None, zone_y=None, save=False):
     """

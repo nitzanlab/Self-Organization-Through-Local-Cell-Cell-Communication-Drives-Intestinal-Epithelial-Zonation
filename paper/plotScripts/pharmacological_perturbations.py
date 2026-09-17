@@ -46,7 +46,7 @@ try:
     _DEFAULT_PANEL_F_POLY  = PHARMACOLOGICAL_PERTURBATION_PANEL_F_POLYGONS_PATH
     _DEFAULT_PANEL_F_CSV   = PHARMACOLOGICAL_PERTURBATION_PANEL_F_CSV_PATH
 except ImportError:
-    _SPRINKLING = "/Users/yaelheyman/RajLab Dropbox/Yael Heyman/shared_yael/Zonation"
+    _SPRINKLING = "/Users/yaelheyman/Documents/zonation_data_bundle/perturbations"
     _DEFAULT_OUT_DIR = os.path.join(os.getcwd(), "paper", "graphs", "pharmacological_perturbations")
     _DEFAULT_EXP_BASES = [
         os.path.join(_SPRINKLING, "20250529_monolayer_conditions_re", "different_conditions"),
@@ -101,6 +101,10 @@ _COND_ORDER = ["ENR", "LDN LOW", "IWP LOW", "ALW LOW", "R0 HIGH"]
 _AVG_RING_WIDTH_UM = 8.6
 
 _ITER_DIR_GLOB    = os.path.join("processedData", "erosion_analysis", "overview_plots_iterations_*")
+# Only this erosion iteration appears in the paper figure (panels E and G); the other
+# iterations are exploratory. Panel F's CSV path is pinned to num_iterations_11 too.
+# Set to None to emit every iteration.
+_FINAL_ITER       = 11
 _PERCENT_CSV_NAME = "percent_apoa4_and_sis_out_of_apoa4.csv"
 _COUNTS_CSV_NAME  = "threshold_histogram_counts_per_frame.csv"
 
@@ -359,6 +363,8 @@ def plot_perturbation_cell_count_bars(output_dir=None, experiment_bases=None):
         })
 
         for iter_num, cond_data in sorted(all_data.items()):
+            if _FINAL_ITER is not None and iter_num != _FINAL_ITER:
+                continue
             conds_in_plot = [c for c in conds_ordered if c in cond_data]
             if not conds_in_plot:
                 continue
@@ -476,6 +482,8 @@ def plot_perturbation_double_positive(output_dir=None, experiment_bases=None):
         })
 
         for iter_num, cond_dict in sorted(combined_by_iter.items()):
+            if _FINAL_ITER is not None and iter_num != _FINAL_ITER:
+                continue
             if not cond_dict:
                 continue
 
@@ -549,14 +557,25 @@ def plot_all_pharmacological_perturbation_plots(output_dir=None, experiment_base
     _out   = output_dir       or _DEFAULT_OUT_DIR
     _bases = experiment_bases or _DEFAULT_EXP_BASES
 
-    print("\nGenerating Panel F: ring-colored polygon image …")
-    plot_perturbation_ring_image(output_dir=_out)
-
-    print("\nGenerating Panel E: per-condition cell count bar charts …")
-    plot_perturbation_cell_count_bars(output_dir=_out, experiment_bases=_bases)
-
-    print("\nGenerating Panel G: %Double-Positive line plot …")
-    plot_perturbation_double_positive(output_dir=_out, experiment_bases=_bases)
+    panels = [
+        ("F: ring-colored polygon image", lambda: plot_perturbation_ring_image(output_dir=_out)),
+        ("E: per-condition cell count bar charts",
+         lambda: plot_perturbation_cell_count_bars(output_dir=_out, experiment_bases=_bases)),
+        ("G: %Double-Positive line plot",
+         lambda: plot_perturbation_double_positive(output_dir=_out, experiment_bases=_bases)),
+    ]
+    failed = []
+    for label, fn in panels:
+        print("\nGenerating Panel %s …" % label)
+        try:
+            fn()
+        except Exception as exc:                      # one bad input must not sink the rest
+            failed.append((label, exc))
+            print("  SKIPPED Panel %s — %s: %s" % (label, type(exc).__name__, exc))
+    if failed:
+        print("\n%d of %d perturbation panels could not be generated:" % (len(failed), len(panels)))
+        for label, exc in failed:
+            print("  - Panel %s (%s)" % (label, type(exc).__name__))
 
 
 if __name__ == "__main__":

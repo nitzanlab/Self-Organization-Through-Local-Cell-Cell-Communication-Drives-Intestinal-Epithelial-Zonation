@@ -61,7 +61,7 @@ def _plot_scatter(gene, metadata, gfp_id, coords, out_path, radius=_RADIUS):
     try:
         matplotlib.rcParams.update({'pdf.fonttype': 42, 'ps.fonttype': 42})
         fig, ax = plt.subplots(figsize=_FIGURE_SIZE)
-        ax.scatter(nn_mean, self_exp, c='g', s=10)
+        ax.scatter(nn_mean, self_exp, c='g', s=0.8)
         ax.set_xlabel('nearest neighbors mean expression of ' + gene, fontsize=_FONT_SIZE)
         ax.set_ylabel('inserted cell expression of  ' + gene, fontsize=_FONT_SIZE)
         ax.text(0.1, 0.9, 'correlation with neighbors  ' + str(np.round(corr, decimals=3)),
@@ -69,6 +69,7 @@ def _plot_scatter(gene, metadata, gfp_id, coords, out_path, radius=_RADIUS):
         ax.tick_params(labelsize=_FONT_SIZE)
         ax.set_xlim(0, 150)
         ax.set_ylim(0, 150)
+        ax.set_box_aspect(1)          # square plotting box
         ax.grid(True, which='major')
         plt.tight_layout()
         plt.savefig(out_path, dpi=_DPI, bbox_inches='tight', pad_inches=0)

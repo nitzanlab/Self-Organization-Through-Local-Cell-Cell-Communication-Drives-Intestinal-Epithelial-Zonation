@@ -344,6 +344,7 @@ def plot_inserted_cells_zone_confusion_distribution(tmpt):
     adata_gfp = adata[adata.obs['spc']]
     adata_non_gfp = adata[~adata.obs['spc']]
     bins = np.linspace(1.6, 2.6, 20)
+    plt.figure(figsize=(8, 6))      # own figure: never draw onto a leaked one
     plt.hist(adata_non_gfp.obs['zone_entropy'], alpha=0.7, label='non GFP', density=True, color='grey', bins=bins)
     plt.hist(adata_gfp.obs['zone_entropy'], alpha=0.7, label='GFP', density=True, color='green', bins=bins)
     plt.xlabel('Zone Entropy')
