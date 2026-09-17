@@ -30,7 +30,7 @@ in order to load the data properly and be able to conduct the analyses and repro
 """
 
 ##CHANGE the directory path to where you have saved the directories above
-HOME_DIR = '/Users/yaelheyman/Library/CloudStorage/GoogleDrive-yaelhei@gmail.com/My Drive/SPRINKLING/SG/sprinkling figures/repo_dir'
+HOME_DIR = '/Users/yaelheyman/Documents/zonation_data_bundle'
 
 
 #can change
@@ -230,7 +230,7 @@ SPC_GFP_THRESH = 2
 ##VISIUM (scale invariance) analysis
 # Set VISIUM_DATA_ROOT to the folder containing the downloaded GSE303705 dataset.
 # Expected structure: VISIUM_DATA_ROOT/GSE303705_RAW/  and  VISIUM_DATA_ROOT/rep2/day0/ etc.
-VISIUM_DATA_ROOT = '/Users/yaelheyman/Library/CloudStorage/GoogleDrive-yaelhei@gmail.com/My Drive/SPRINKLING/SG/mouse visium data/versi data set'
+VISIUM_DATA_ROOT = '/Users/yaelheyman/Documents/zonation_data_bundle/mouse_visium'
 SCALE_INVARIANCE_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper', 'graphs', 'scale_invariance_plots')
 
 # Genes of interest for the scale-invariance figure (Visium, Figure 2).
@@ -243,19 +243,19 @@ SCALE_INVARIANCE_GENES_OF_INTEREST = [
 
 ##SPRINKLING (cell transplantation) raw data
 # Set SPRINKLING_NOV23_BASE_PATH to the sprinkling_nov_23 folder.
-SPRINKLING_NOV23_BASE_PATH = '/Users/yaelheyman/Library/CloudStorage/GoogleDrive-yaelhei@gmail.com/My Drive/SPRINKLING/SG/sprinkling_nov_23'
-SPRINKLING_BG_72 = '/Users/yaelheyman/RajLab Dropbox/Yael Heyman/shared_yael/sg/sprinkling nov 23/72 hr/roi_1/hyb_background_aligned.tiff'
-SPRINKLING_BG_12 = '/Users/yaelheyman/RajLab Dropbox/Yael Heyman/shared_yael/sg/sprinkling nov 23/12 hr/roi_2/hyb_background_aligned.tiff'
+SPRINKLING_NOV23_BASE_PATH = '/Users/yaelheyman/Documents/zonation_data_bundle/sprinkling_nov_23'
+SPRINKLING_BG_72 = '/Users/yaelheyman/Documents/zonation_data_bundle/backgrounds/nov23_72hr_roi1/hyb_background_aligned.tiff'
+SPRINKLING_BG_12 = '/Users/yaelheyman/Documents/zonation_data_bundle/backgrounds/nov23_12hr_roi2/hyb_background_aligned.tiff'
 
 ##MONOLAYER raw figures (autonomous zonation panel)
 # Set MONOLAYER_RAW_DATA_ROOT to the pasadena_run_no_gel folder.
 # Expected sub-paths: 'all transcripts/transcrips_20240925.csv'
-MONOLAYER_RAW_DATA_ROOT = '/Users/yaelheyman/Library/CloudStorage/GoogleDrive-yaelhei@gmail.com/My Drive/SPRINKLING/SG/pasadena_run_no_gel'
+MONOLAYER_RAW_DATA_ROOT = '/Users/yaelheyman/Documents/zonation_data_bundle/raw'
 # Set MONOLAYER_BACKGROUND_IMAGE to the hyb_background_aligned.tiff file.
-MONOLAYER_BACKGROUND_IMAGE = '/Users/yaelheyman/RajLab Dropbox/Yael Heyman/shared_yael/sg/pasadena run no gel/roi_1/hyb_background_aligned.tiff'
+MONOLAYER_BACKGROUND_IMAGE = '/Users/yaelheyman/Documents/zonation_data_bundle/backgrounds/pasadena_roi1/hyb_background_aligned.tiff'
 
 ##PHARMACOLOGICAL PERTURBATION raw data
-_PERT_BASE = '/Users/yaelheyman/RajLab Dropbox/Yael Heyman/shared_yael/Zonation'
+_PERT_BASE = '/Users/yaelheyman/Documents/zonation_data_bundle/perturbations'
 PHARMACOLOGICAL_PERTURBATION_EXPERIMENT_BASES = [
     os.path.join(_PERT_BASE, '20250529_monolayer_conditions_re', 'different_conditions'),
     os.path.join(_PERT_BASE, '20250718_monolayer_conditions',    'different_conditions'),

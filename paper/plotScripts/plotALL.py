@@ -3,7 +3,7 @@ from paper.plotScripts.autonomous_zonation_plots import *
 from paper.plotScripts.zonation_plasticity import *
 from paper.plotScripts.neighborhood_zone_adoption import *
 from paper.plotScripts.continuous_regenerative_response import *
-from paper.plotScripts.plot_rep_profiles import plot_scale_invariance_figures
+from paper.plotScripts.scale_invariance_profiles import plot_scale_invariance_figures
 from paper.plotScripts.pharmacological_perturbations import plot_all_pharmacological_perturbation_plots
 
 def plot_all_figures():
