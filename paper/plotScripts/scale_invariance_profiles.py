@@ -459,6 +459,7 @@ def score_scale_invariance(all_data, genes, timepoints, um_per_hires_px,
 # Main entry point (called by plotALL.py or CLI)
 # ============================================================
 
+
 def plot_scale_invariance_figures(rep="rep2", subroi=True,
                                    data_root=None, out_dir=None):
     """
@@ -529,6 +530,40 @@ def plot_scale_invariance_figures(rep="rep2", subroi=True,
         fig_r.savefig(panel_d_path, bbox_inches="tight", format="svg")
         plt.close(fig_r)
         print(f"Panel D saved: {panel_d_path.name}")
+
+        # ── Panel C: same genes, y-normalised (fraction of max CPM) ──────────
+        # Ported from monolayer_analysis/plot_rep_profiles.py, which produced this
+        # panel before the July refactor. The paper's Figure 2 uses the raw-CPM
+        # Panel D above, so this only feeds the y-normalised composite variant:
+        # set EMIT_PANEL_C = True here and EMIT_YNORM_VARIANT = True in
+        # scale_invariance_figure.py to build that one.
+        EMIT_PANEL_C = False
+        if EMIT_PANEL_C:
+            fig_c, ax_c = plt.subplots(2, n_c, figsize=(_fig_w_in, _fig_h_in), squeeze=False)
+            for gi, gene in enumerate(GENES_D):
+                for ri, (norm_x, norm_y) in enumerate([(False, True), (True, True)]):
+                    plot_gene_ribbon(gene, all_data, TIMEPOINTS, palette, ERRORBAR_MODE,
+                                     um_per_hires_px, ax=ax_c[ri][gi],
+                                     normalize_x=norm_x, normalize=norm_y, smooth_sigma=0.5)
+                    ax = ax_c[ri][gi]
+                    if ax.get_legend():
+                        ax.get_legend().remove()
+                    ax.set_title(ax.get_title(), fontsize=_comp_fs, fontweight="bold")
+                    ax.set_xlabel(ax.get_xlabel(), fontsize=_comp_fs)
+                    ax.set_ylabel(ax.get_ylabel() if gi == 0 else "", fontsize=_comp_fs)
+                    ax.tick_params(labelsize=_comp_fs)
+                    for txt in ax.texts:
+                        txt.set_fontsize(_comp_fs)
+
+            for ri, lbl in enumerate(["Fraction of max CPM  (µm x-axis)",
+                                      "Fraction of max CPM  (fractional x-axis)"]):
+                ax_c[ri][0].set_ylabel(lbl, fontsize=_comp_fs)
+
+            fig_c.tight_layout()
+            panel_c_path = _out_dir / f"{rep}_panel_c_3row{suffix}_ribbon.svg"
+            fig_c.savefig(panel_c_path, bbox_inches="tight", format="svg")
+            plt.close(fig_c)
+            print(f"Panel C saved: {panel_c_path.name}")
 
         # ── Sub-ROI width stats (Panel C data) ───────────────────────────────
         if subroi:

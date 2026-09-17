@@ -330,7 +330,10 @@ def create_figure_2(rep="rep2", data_root=None, out_dir=None):
     ax_bar.set_xlim(-0.65, len(TIMEPOINTS) - 0.35)
     ax_bar.spines["top"].set_visible(False)
     ax_bar.spines["right"].set_visible(False)
-    fig_bar.subplots_adjust(bottom=0.32, top=0.95, left=0.18, right=0.97)
+    # bottom/top must leave room for the 40deg-rotated tick labels and the title;
+    # at 0.32/0.95 the leading "3 "/"5 " of the labels and the top half of the
+    # title were clipped by the figure edge.
+    fig_bar.subplots_adjust(bottom=0.42, top=0.88, left=0.19, right=0.98)
     buf = io.BytesIO()
     fig_bar.savefig(buf, format="svg")
     plt.close(fig_bar)
@@ -338,7 +341,9 @@ def create_figure_2(rep="rep2", data_root=None, out_dir=None):
 
     # ── PROFILES SVG ──────────────────────────────────────────────────────────
     print("Loading profiles SVG …")
-    prof_vb, prof_body = extract_svg(PROFILES_SVG)
+    # Only used to size the provisional header of `lines`, which the per-variant
+    # writer below discards (it keeps lines[3:] and recomputes its own height).
+    prof_vb, prof_body = extract_svg(PROFILES_SVG_RAW)
     prof_body = re.sub(
         r'<text\b[^>]*>[^<]*(top:\s*mean CPM|ring\s*width)[^<]*</text>',
         '', prof_body, flags=re.IGNORECASE
@@ -490,10 +495,16 @@ def create_figure_2(rep="rep2", data_root=None, out_dir=None):
     # ── WRITE — two variants (y-normalised Panel D and raw CPM Panel D) ───────
     _out_dir.mkdir(parents=True, exist_ok=True)
 
+    # The paper figure uses the raw-CPM profile panel. The y-normalised variant is
+    # kept available but not emitted by default — set EMIT_YNORM_VARIANT = True to
+    # produce {rep}_zonation_figure.svg alongside it.
+    EMIT_YNORM_VARIANT = False
+
     _variants = [
-        (PROFILES_SVG,     OUT_SVG,                                          "y-norm"),
         (PROFILES_SVG_RAW, _out_dir / "figure_2_scale_invariance.svg",         "raw CPM"),
     ]
+    if EMIT_YNORM_VARIANT:
+        _variants.append((PROFILES_SVG, OUT_SVG, "y-norm"))
 
     for _prof_path, _out_path, _label in _variants:
         if not _prof_path.exists():
