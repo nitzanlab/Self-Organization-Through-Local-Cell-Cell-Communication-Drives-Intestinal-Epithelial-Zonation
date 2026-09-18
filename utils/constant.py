@@ -29,8 +29,22 @@ in order to load the data properly and be able to conduct the analyses and repro
 4. change the directory path for HOME_DIR to where you have saved these directories in the format explained above 
 """
 
-##CHANGE the directory path to where you have saved the directories above
-HOME_DIR = '/Users/yaelheyman/Documents/zonation_data_bundle'
+##CHANGE the directory path to where you have saved the directories above,
+## or leave it alone and set the ZONATION_DATA_DIR environment variable instead:
+##     export ZONATION_DATA_DIR=/path/to/zonation_data_bundle
+HOME_DIR = os.environ.get(
+    'ZONATION_DATA_DIR',
+    '/Users/yaelheyman/Documents/zonation_data_bundle',
+)
+
+if not os.path.isdir(HOME_DIR):
+    raise FileNotFoundError(
+        f"Data directory not found: {HOME_DIR}\n"
+        "Download the data (see README.md), then either edit HOME_DIR in "
+        "utils/constant.py or set the ZONATION_DATA_DIR environment variable to "
+        "the directory holding raw/, backgrounds/, sprinkling_nov_23/, "
+        "perturbations/, unperturbed/ and sprinkled/."
+    )
 
 
 #can change
@@ -230,7 +244,7 @@ SPC_GFP_THRESH = 2
 ##VISIUM (scale invariance) analysis
 # Set VISIUM_DATA_ROOT to the folder containing the downloaded GSE303705 dataset.
 # Expected structure: VISIUM_DATA_ROOT/GSE303705_RAW/  and  VISIUM_DATA_ROOT/rep2/day0/ etc.
-VISIUM_DATA_ROOT = '/Users/yaelheyman/Documents/zonation_data_bundle/mouse_visium'
+VISIUM_DATA_ROOT = os.path.join(HOME_DIR, 'mouse_visium')
 SCALE_INVARIANCE_PLOTS_FOLDER_PATH = os.path.join(os.getcwd(), 'paper', 'graphs', 'scale_invariance_plots')
 
 # Genes of interest for the scale-invariance figure (Visium, Figure 2).
@@ -243,19 +257,19 @@ SCALE_INVARIANCE_GENES_OF_INTEREST = [
 
 ##SPRINKLING (cell transplantation) raw data
 # Set SPRINKLING_NOV23_BASE_PATH to the sprinkling_nov_23 folder.
-SPRINKLING_NOV23_BASE_PATH = '/Users/yaelheyman/Documents/zonation_data_bundle/sprinkling_nov_23'
-SPRINKLING_BG_72 = '/Users/yaelheyman/Documents/zonation_data_bundle/backgrounds/nov23_72hr_roi1/hyb_background_aligned.tiff'
-SPRINKLING_BG_12 = '/Users/yaelheyman/Documents/zonation_data_bundle/backgrounds/nov23_12hr_roi2/hyb_background_aligned.tiff'
+SPRINKLING_NOV23_BASE_PATH = os.path.join(HOME_DIR, 'sprinkling_nov_23')
+SPRINKLING_BG_72 = os.path.join(HOME_DIR, 'backgrounds', 'nov23_72hr_roi1', 'hyb_background_aligned.tiff')
+SPRINKLING_BG_12 = os.path.join(HOME_DIR, 'backgrounds', 'nov23_12hr_roi2', 'hyb_background_aligned.tiff')
 
 ##MONOLAYER raw figures (autonomous zonation panel)
 # Set MONOLAYER_RAW_DATA_ROOT to the pasadena_run_no_gel folder.
 # Expected sub-paths: 'all transcripts/transcrips_20240925.csv'
-MONOLAYER_RAW_DATA_ROOT = '/Users/yaelheyman/Documents/zonation_data_bundle/raw'
+MONOLAYER_RAW_DATA_ROOT = os.path.join(HOME_DIR, 'raw')
 # Set MONOLAYER_BACKGROUND_IMAGE to the hyb_background_aligned.tiff file.
-MONOLAYER_BACKGROUND_IMAGE = '/Users/yaelheyman/Documents/zonation_data_bundle/backgrounds/pasadena_roi1/hyb_background_aligned.tiff'
+MONOLAYER_BACKGROUND_IMAGE = os.path.join(HOME_DIR, 'backgrounds', 'pasadena_roi1', 'hyb_background_aligned.tiff')
 
 ##PHARMACOLOGICAL PERTURBATION raw data
-_PERT_BASE = '/Users/yaelheyman/Documents/zonation_data_bundle/perturbations'
+_PERT_BASE = os.path.join(HOME_DIR, 'perturbations')
 PHARMACOLOGICAL_PERTURBATION_EXPERIMENT_BASES = [
     os.path.join(_PERT_BASE, '20250529_monolayer_conditions_re', 'different_conditions'),
     os.path.join(_PERT_BASE, '20250718_monolayer_conditions',    'different_conditions'),

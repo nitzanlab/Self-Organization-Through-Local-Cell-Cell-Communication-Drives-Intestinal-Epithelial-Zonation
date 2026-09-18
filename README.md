@@ -1,42 +1,102 @@
 # Self-Organization Through Local Cell-Cell Communication Drives Intestinal Epithelial Zonation
-This is the repo of the code containing the necessary functions to reproduce the analyses and figure panels presented in our paper.
 
+Code to reproduce the analyses and figure panels in the paper.
 
-## Installation and Setup
+## 1. Clone the repository
 
-1. Clone the repository.
-2. Download the data from https://zenodo.org/records/17956270?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6IjczOWNlZDI0LTFlM2EtNGJjNy1iOTQwLTVlNDRjYTMzMjRlZCIsImRhdGEiOnt9LCJyYW5kb20iOiJkMGY2YjE2MjA4MDk0OWE2NTFiZjYxNzM4ZTI1YTgzZSJ9.Krydne1ABLYQe4DYJi13XDA6LZZ5mSfEpAeeTy32doKHx45VSEQEj8LUXBhq4CtHB1-Yfpmuih_lPA_jW-iaxg
-3. Download from 'Moor, A. E., Harnik, Y., Ben-Moshe, S., Massasa, E. E., Rozenberg, M., Eilam, R., ... & Itzkovitz, S.
- (2018). Spatial reconstruction of single enterocytes uncovers broad zonation along the intestinal villus axis. Cell,
-  175(4), 1156-1167.' 
-  (a) table_A_LCM_TPM_values.tsv
-  (b) table_D_zonation_reconstruction.tsv 
-  and save them in an additional director 'in_vivo_villus_data'
-  b. at this point the directories should be in the following structure:
-  in a directory path of your choosing which will be defined in the variable HOME_DIR:
-  ---in_vivo_villus_data 
-    --table_A_LCM_TPM_values.tsv
-    --table_D_zonation_reconstruction.tsv
-  ---- sprinkled 
-    -- 12hr
-        --roi1
-        --roi2
-        --roi3
-    -- 72hr
-       --roi1
-       --roi2
-       --roi3
-       --roi4
- ---- unperturbed
-        --- monolayer_erosion
-4. change the directory path for HOME_DIR in utils/constants.py to where you have saved these directories in the format explained above 
-5. download packages using the requirements.txt file found in utils subdirectory
-6. under paper/plotScripts exists the python file plotALL.py includes a function plot_all_figures() , call and run it in main.py 
-7. the plots shown in the figures will be saved to paper/graphs/
-to four different directions
-    a. autonomous_zonation_figure_plots
-    b. zonation_plasticity_plots
-    c. neighborhood_zone_adoption_plots
-    d. continuous_regenerative_figure_plots
+```bash
+git clone https://github.com/nitzanlab/Self-Organization-Through-Local-Cell-Cell-Communication-Drives-Intestinal-Epithelial-Zonation.git
+cd Self-Organization-Through-Local-Cell-Cell-Communication-Drives-Intestinal-Epithelial-Zonation
+```
 
-"""
+## 2. Install dependencies
+
+```bash
+pip install -r utils/requirements.txt
+```
+
+## 3. Download the data
+
+Create one directory to hold everything — its path is what you set in step 4.
+
+### (a) This paper's data — Zenodo
+
+Download every file from the Zenodo record and follow the `RECONSTRUCT.md` included
+there. It explains how to unzip the archives in place and how to rename the three
+background images, which are distributed under distinct filenames because they share
+a filename in the directory layout.
+
+### (b) Moor et al. 2018 — villus zonation reference
+
+From Moor, A. E., Harnik, Y., Ben-Moshe, S., Massasa, E. E., Rozenberg, M., Eilam, R.,
+... & Itzkovitz, S. (2018). *Spatial reconstruction of single enterocytes uncovers broad
+zonation along the intestinal villus axis.* Cell, 175(4), 1156-1167:
+
+- `table_A_LCM_TPM_values.tsv`
+- `table_D_zonation_reconstruction.tsv`
+
+Save both into a directory named `in_vivo_villus_data`.
+
+### (c) Mouse Visium HD — GEO accession GSE303705
+
+Save into a directory named `mouse_visium`, giving
+`mouse_visium/GSE303705_RAW/` and `mouse_visium/rep2/day0/` etc.
+
+### Resulting layout
+
+```
+<data directory>/
+├── raw/                     # monolayer transcripts, segmentation, cell-by-gene tables
+├── backgrounds/
+│   ├── pasadena_roi1/hyb_background_aligned.tiff
+│   ├── nov23_72hr_roi1/hyb_background_aligned.tiff
+│   └── nov23_12hr_roi2/hyb_background_aligned.tiff
+├── sprinkling_nov_23/       # cell transplantation
+├── perturbations/           # pharmacological perturbations
+├── unperturbed/
+│   └── monolayer_erosion/
+├── sprinkled/
+│   ├── 12hr/{roi1,roi2,roi3}
+│   └── 72hr/{roi1,roi2,roi3,roi4}
+├── in_vivo_villus_data/     # from (b), downloaded separately
+└── mouse_visium/            # from (c), downloaded separately
+```
+
+The background images in the Zenodo record keep only the channels the figures read
+(acquisition channel 3 for `pasadena_roi1`; channels 2 and 3 for the two nov23 images).
+The plotting code indexes them at their stored positions. The full multi-channel
+acquisitions are archived separately.
+
+## 4. Point the code at the data
+
+Either set an environment variable:
+
+```bash
+export ZONATION_DATA_DIR=/path/to/your/data/directory
+```
+
+or edit `HOME_DIR` in `utils/constant.py`. Every other data path derives from it. If the
+directory is missing, importing `utils.constant` fails immediately with a message saying
+so, rather than failing later inside a plotting function.
+
+## 5. Generate the figures
+
+```python
+from paper.plotScripts.plotALL import plot_all_figures
+plot_all_figures()
+```
+
+Each figure runs independently, so one that fails does not prevent the others from
+being produced; the run ends with a summary of which succeeded and how many files each
+wrote.
+
+Output goes to `paper/graphs/`:
+
+| directory | figure |
+|---|---|
+| `autonomous_zonation_figure_plots/` | Figure 1 — autonomous zonation |
+| `scale_invariance_plots/` | Figure 2 — scale invariance |
+| `zonation_plasticity_plots/` | Figure 3 — cell transplantation |
+| `neighborhood_zone_adoption_plots/` | Figure 4 — zone confusion |
+| `pharmacological_perturbations/` | Figure 5 — pharmacological perturbations |
+| `continuous_regenerative_figure_plots/` | Figure 6 — continuous regenerative response |
