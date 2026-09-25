@@ -21,10 +21,13 @@ Create one directory to hold everything — its path is what you set in step 4.
 
 ### (a) This paper's data — Zenodo
 
-Download every file from the Zenodo record and follow the `RECONSTRUCT.md` included
-there. It explains how to unzip the archives in place and how to rename the three
-background images, which are distributed under distinct filenames because they share
-a filename in the directory layout.
+**DOI: [10.5281/zenodo.17956269](https://doi.org/10.5281/zenodo.17956269)**
+
+Download every file from that record into one directory, then follow the
+`RECONSTRUCT.md` included there. It explains how to concatenate the files distributed
+as `.part` pieces (with an MD5 for each reassembled file), how to unzip the archives in
+place, and how to rename the three background images, which are distributed under
+distinct filenames because they share a filename in the directory layout.
 
 ### (b) Moor et al. 2018 — villus zonation reference
 
